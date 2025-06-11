@@ -29,16 +29,20 @@ namespace VehicleDynamics
         }
         private void FixedUpdate()
         {
-            float suspensionMountToHubDistance = Vector3.Distance(parentSuspension.springChassisMount.position, transform.position);
+            
             Vector3 rayOrigin = transform.position;
             rayOrigin.y = parentSuspension.springChassisMount.position.y;
             Ray ray = new(rayOrigin, -parentSuspension.transform.up);
-            Debug.DrawRay(ray.origin, ray.direction * suspensionMountToHubDistance, Color.red);
+
+            //float rayToWheelHubDistance = Vector3.Distance(rayOrigin, transform.position);
+            float rayToWheelHubDistance =  parentSuspension.springChassisMount.position.y - transform.position.y;
+
+            Debug.DrawRay(ray.origin, ray.direction * rayToWheelHubDistance, Color.red);
             LayerMask layerMask = LayerMask.GetMask("Default");
-            if (Physics.SphereCast(ray, wheelRadius, out RaycastHit hit, suspensionMountToHubDistance, layerMask))
+            if (Physics.SphereCast(ray, wheelRadius, out RaycastHit hit, rayToWheelHubDistance, layerMask))
             {
                 previousSuspensionDistance = currentSuspensionDistance;
-                currentSuspensionDistance = suspensionMountToHubDistance - hit.distance;
+                currentSuspensionDistance = rayToWheelHubDistance - hit.distance;
                 springVelocity = (currentSuspensionDistance - previousSuspensionDistance) / Time.fixedDeltaTime;
                 // Hooke's Law
                 springForce = parentSuspension.springConstant*2 * currentSuspensionDistance;
