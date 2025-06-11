@@ -3281,7 +3281,7 @@ MonoBehaviour:
   updateValuesEveryFrame: 1
   vehicleBody: {fileID: 1250426219}
   wheelHubBody: {fileID: 1397608476}
-  suspensionType: 1
+  suspensionType: 2
   lowerWishboneChassisMount: {fileID: 1296514902}
   lowerWishboneHubMount: {fileID: 1836277356}
   upperWishboneChassisMount: {fileID: 799556097}
@@ -3289,8 +3289,8 @@ MonoBehaviour:
   springChassisMount: {fileID: 1280460995}
   springHubMount: {fileID: 1707948554}
   suspensionDistanceConstant: 0.7
-  springConstant: 36000
-  damperConstant: 2000
+  springConstant: 39000
+  damperConstant: 2500
   antirollBarConstant: 1000
   camberAngle: 0
   toeAngle: 0
@@ -3516,7 +3516,7 @@ Transform:
   m_GameObject: {fileID: 695106442}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.176, y: -0.561, z: -0.04}
+  m_LocalPosition: {x: -0.176, y: -0.391, z: -0.04}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4396,7 +4396,7 @@ MonoBehaviour:
   updateValuesEveryFrame: 1
   vehicleBody: {fileID: 1250426219}
   wheelHubBody: {fileID: 1130758305}
-  suspensionType: 1
+  suspensionType: 2
   lowerWishboneChassisMount: {fileID: 1209252061}
   lowerWishboneHubMount: {fileID: 1252313358}
   upperWishboneChassisMount: {fileID: 2023706478}
@@ -4404,8 +4404,8 @@ MonoBehaviour:
   springChassisMount: {fileID: 1120803060}
   springHubMount: {fileID: 1515916745}
   suspensionDistanceConstant: 0.7
-  springConstant: 36000
-  damperConstant: 2000
+  springConstant: 39000
+  damperConstant: 2500
   antirollBarConstant: 1000
   camberAngle: 0
   toeAngle: 0
@@ -6761,7 +6761,7 @@ MonoBehaviour:
   updateValuesEveryFrame: 1
   vehicleBody: {fileID: 1250426219}
   wheelHubBody: {fileID: 2090970800}
-  suspensionType: 1
+  suspensionType: 2
   lowerWishboneChassisMount: {fileID: 801132187}
   lowerWishboneHubMount: {fileID: 1965607327}
   upperWishboneChassisMount: {fileID: 1006955438}
@@ -6770,7 +6770,7 @@ MonoBehaviour:
   springHubMount: {fileID: 695106443}
   suspensionDistanceConstant: 0.7
   springConstant: 36000
-  damperConstant: 2000
+  damperConstant: 2100
   antirollBarConstant: 1000
   camberAngle: 0
   toeAngle: 0
@@ -7558,7 +7558,7 @@ Transform:
   m_GameObject: {fileID: 1515916744}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.176, y: -0.5609996, z: -0.039996043}
+  m_LocalPosition: {x: 0.176, y: -0.39099896, z: -0.039995134}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8094,7 +8094,7 @@ Transform:
   m_GameObject: {fileID: 1707948553}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.176, y: -0.5609996, z: -0.039996043}
+  m_LocalPosition: {x: 0.176, y: -0.39099896, z: -0.039995134}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8576,7 +8576,7 @@ MonoBehaviour:
   updateValuesEveryFrame: 1
   vehicleBody: {fileID: 1250426219}
   wheelHubBody: {fileID: 1856734149}
-  suspensionType: 1
+  suspensionType: 2
   lowerWishboneChassisMount: {fileID: 807656344}
   lowerWishboneHubMount: {fileID: 2139076900}
   upperWishboneChassisMount: {fileID: 1898636718}
@@ -8585,7 +8585,7 @@ MonoBehaviour:
   springHubMount: {fileID: 2032588454}
   suspensionDistanceConstant: 0.7
   springConstant: 36000
-  damperConstant: 2000
+  damperConstant: 2100
   antirollBarConstant: 1000
   camberAngle: 0
   toeAngle: 0
@@ -9227,7 +9227,7 @@ Transform:
   m_GameObject: {fileID: 2032588453}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.176, y: -0.5609996, z: -0.039996043}
+  m_LocalPosition: {x: -0.176, y: -0.39099896, z: -0.039995134}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

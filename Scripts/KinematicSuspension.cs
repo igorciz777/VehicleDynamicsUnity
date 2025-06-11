@@ -51,8 +51,8 @@ namespace VehicleDynamics
                 lowerWishboneChassisMount.position - lowerWishboneHubMount.position
             );
             lowerWishboneBar.xMotion = ConfigurableJointMotion.Locked;
-            lowerWishboneBar.lowAngularXLimit = new SoftJointLimit { limit = -15f };
-            lowerWishboneBar.highAngularXLimit = new SoftJointLimit { limit = 15f };
+            lowerWishboneBar.lowAngularXLimit = new SoftJointLimit { limit = -5f };
+            lowerWishboneBar.highAngularXLimit = new SoftJointLimit { limit = 5f };
             lowerWishboneBar.axis = new(0, 0, 1);
 
             springJoint = vehicleBody.gameObject.AddComponent<SpringJoint>();
@@ -158,7 +158,7 @@ namespace VehicleDynamics
             joint.connectedAnchor = anchorB;
 
             SoftJointLimit limit = new SoftJointLimit();
-            limit.limit = .01f;
+            limit.limit = 1f;
 
             joint.xMotion = ConfigurableJointMotion.Locked;
             joint.yMotion = ConfigurableJointMotion.Limited;
