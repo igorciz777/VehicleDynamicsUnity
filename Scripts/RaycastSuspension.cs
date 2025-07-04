@@ -15,7 +15,7 @@ namespace VehicleDynamics
     public class Suspension : MonoBehaviour
     {
         [SerializeField] private Rigidbody vehicleBody;
-        [SerializeField] public WheelHub wheelHub;
+        [SerializeField] public WheelSpindle spindle;
         [Tooltip("Only for SolidAxle suspension type")]
         [SerializeField] public Suspension oppositeSuspension; // Tylko gdy typ zawieszenia to SolidAxle
         [Header("Suspension Settings")]
@@ -25,7 +25,6 @@ namespace VehicleDynamics
         [SerializeField] private float damperConstant = 4000f;
         [SerializeField] private float antirollBarConstant = 1000f;
         [SerializeField] private float camberAngle = 0f;
-        [SerializeField] private float toeAngle = 0f;
         [SerializeField] private Vector3 suspensionMount;
 
         private float previousSuspensionDistance;
@@ -37,7 +36,7 @@ namespace VehicleDynamics
         private void FixedUpdate()
         {
             Ray ray = new(transform.position, -transform.up);
-            if (Physics.SphereCast(ray, wheelHub.wheelRadius, out RaycastHit hit, suspensionDistanceConstant))
+            if (Physics.SphereCast(ray, spindle.wheelRadius, out RaycastHit hit, suspensionDistanceConstant))
             {
                 previousSuspensionDistance = currentSuspensionDistance;
                 currentSuspensionDistance = suspensionDistanceConstant - hit.distance;
@@ -49,11 +48,11 @@ namespace VehicleDynamics
                 vehicleBody.AddForceAtPosition(transform.up * (springForce + damperForce), transform.position, ForceMode.Force);
 
                 Vector3 wheelPosition = transform.position - transform.up * (suspensionDistanceConstant - currentSuspensionDistance);
-                wheelHub.transform.position = wheelPosition;
+                spindle.transform.position = wheelPosition;
             }
             else
             {
-                wheelHub.transform.position = transform.position - transform.up * suspensionDistanceConstant;
+                spindle.transform.position = transform.position - transform.up * suspensionDistanceConstant;
             }
 
             float forceMagnitude = Mathf.Clamp01((springForce + damperForce) / (springConstant * suspensionDistanceConstant));
@@ -65,9 +64,9 @@ namespace VehicleDynamics
                 case SuspensionType.MacPherson:
                     // MacPherson suspension logic
                     // Calculate camber angle based on suspension mount and visual wheel position
-                    Vector3 suspensionToWheel = wheelHub.transform.position - (transform.position + suspensionMount);
+                    Vector3 suspensionToWheel = spindle.transform.position - (transform.position + suspensionMount);
                     camberAngle = Mathf.Atan2(suspensionToWheel.y, suspensionToWheel.x) * Mathf.Rad2Deg;
-                    wheelHub.transform.localRotation = Quaternion.Euler(wheelHub.transform.localRotation.eulerAngles.x, wheelHub.transform.localRotation.eulerAngles.y, camberAngle);
+                    spindle.transform.localRotation = Quaternion.Euler(spindle.transform.localRotation.eulerAngles.x, spindle.transform.localRotation.eulerAngles.y, camberAngle);
                     break;
                 case SuspensionType.DoubleWishbone:
                     // Double wishbone suspension logic
@@ -80,9 +79,9 @@ namespace VehicleDynamics
                     ApplyAntiroll(oppositeSuspension);
                     oppositeSuspension.ApplyAntiroll(this);
                     // Calculate wheel camber angle based on suspension roll
-                    Vector3 wheelHubToOpposite = oppositeSuspension.wheelHub.transform.position - wheelHub.transform.position;
-                    camberAngle = Mathf.Atan2(wheelHubToOpposite.y, wheelHubToOpposite.x) * Mathf.Rad2Deg;
-                    wheelHub.transform.localRotation = Quaternion.Euler(wheelHub.transform.localRotation.eulerAngles.x, wheelHub.transform.localRotation.eulerAngles.y, camberAngle);
+                    Vector3 spindleToOpposite = oppositeSuspension.spindle.transform.position - spindle.transform.position;
+                    camberAngle = Mathf.Atan2(spindleToOpposite.y, spindleToOpposite.x) * Mathf.Rad2Deg;
+                    spindle.transform.localRotation = Quaternion.Euler(spindle.transform.localRotation.eulerAngles.x, spindle.transform.localRotation.eulerAngles.y, camberAngle);
                     break;
                 }
             }
@@ -99,14 +98,14 @@ namespace VehicleDynamics
             Gizmos.color = Color.blue;
             Gizmos.DrawLine(transform.position, transform.position - transform.up * suspensionDistanceConstant);
 
-            if (wheelHub != null)
+            if (spindle != null)
             {
-                Gizmos.DrawWireSphere(transform.position - transform.up * suspensionDistanceConstant, wheelHub.wheelRadius);
+                Gizmos.DrawWireSphere(transform.position - transform.up * suspensionDistanceConstant, spindle.wheelRadius);
             }
         }
         void OnDrawGizmos()
         {
-            if (wheelHub == null) return;
+            if (spindle == null) return;
             switch (suspensionType)
             {
                 case SuspensionType.MacPherson:
@@ -114,21 +113,21 @@ namespace VehicleDynamics
                     Vector3 suspensionMountLeft = transform.position + suspensionMount + transform.forward * 0.1f;
                     Vector3 suspensionMountRight = transform.position + suspensionMount - transform.forward * 0.1f;
                     Gizmos.DrawLine(suspensionMountLeft, suspensionMountRight);
-                    Gizmos.DrawLine(suspensionMountLeft, wheelHub.transform.position - transform.up * wheelHub.wheelHubRadius);
-                    Gizmos.DrawLine(suspensionMountRight, wheelHub.transform.position - transform.up * wheelHub.wheelHubRadius);
+                    Gizmos.DrawLine(suspensionMountLeft, spindle.transform.position - transform.up * spindle.spindleRadius);
+                    Gizmos.DrawLine(suspensionMountRight, spindle.transform.position - transform.up * spindle.spindleRadius);
                     break;
                 case SuspensionType.DoubleWishbone:
                     Gizmos.color = Color.cyan;
-                    Vector3 topWishboneLeft = transform.position + suspensionMount + transform.forward * 0.1f + transform.up * wheelHub.wheelHubRadius;
-                    Vector3 topWishboneRight = transform.position + suspensionMount - transform.forward * 0.1f + transform.up * wheelHub.wheelHubRadius;
-                    Vector3 bottomWishboneLeft = transform.position + suspensionMount + transform.forward * 0.1f - transform.up * wheelHub.wheelHubRadius;
-                    Vector3 bottomWishboneRight = transform.position + suspensionMount - transform.forward * 0.1f - transform.up * wheelHub.wheelHubRadius;
+                    Vector3 topWishboneLeft = transform.position + suspensionMount + transform.forward * 0.1f + transform.up * spindle.spindleRadius;
+                    Vector3 topWishboneRight = transform.position + suspensionMount - transform.forward * 0.1f + transform.up * spindle.spindleRadius;
+                    Vector3 bottomWishboneLeft = transform.position + suspensionMount + transform.forward * 0.1f - transform.up * spindle.spindleRadius;
+                    Vector3 bottomWishboneRight = transform.position + suspensionMount - transform.forward * 0.1f - transform.up * spindle.spindleRadius;
                     Gizmos.DrawLine(topWishboneLeft, topWishboneRight);
                     Gizmos.DrawLine(bottomWishboneLeft, bottomWishboneRight);
-                    Gizmos.DrawLine(topWishboneLeft, wheelHub.transform.position + transform.up * wheelHub.wheelHubRadius);
-                    Gizmos.DrawLine(topWishboneRight, wheelHub.transform.position + transform.up * wheelHub.wheelHubRadius);
-                    Gizmos.DrawLine(bottomWishboneLeft, wheelHub.transform.position - transform.up * wheelHub.wheelHubRadius);
-                    Gizmos.DrawLine(bottomWishboneRight, wheelHub.transform.position - transform.up * wheelHub.wheelHubRadius);
+                    Gizmos.DrawLine(topWishboneLeft, spindle.transform.position + transform.up * spindle.spindleRadius);
+                    Gizmos.DrawLine(topWishboneRight, spindle.transform.position + transform.up * spindle.spindleRadius);
+                    Gizmos.DrawLine(bottomWishboneLeft, spindle.transform.position - transform.up * spindle.spindleRadius);
+                    Gizmos.DrawLine(bottomWishboneRight, spindle.transform.position - transform.up * spindle.spindleRadius);
                     break;
                 case SuspensionType.SolidAxle:
                     if (oppositeSuspension == null)
@@ -136,8 +135,8 @@ namespace VehicleDynamics
                         break;
                     }
                     Gizmos.color = Color.magenta;
-                    Gizmos.DrawLine(wheelHub.transform.position + transform.up * wheelHub.wheelHubRadius, oppositeSuspension.wheelHub.transform.position + transform.up * oppositeSuspension.wheelHub.wheelHubRadius);
-                    Gizmos.DrawLine(wheelHub.transform.position - transform.up * wheelHub.wheelHubRadius, oppositeSuspension.wheelHub.transform.position - transform.up * oppositeSuspension.wheelHub.wheelHubRadius);
+                    Gizmos.DrawLine(spindle.transform.position + transform.up * spindle.spindleRadius, oppositeSuspension.spindle.transform.position + transform.up * oppositeSuspension.spindle.spindleRadius);
+                    Gizmos.DrawLine(spindle.transform.position - transform.up * spindle.spindleRadius, oppositeSuspension.spindle.transform.position - transform.up * oppositeSuspension.spindle.spindleRadius);
                     break;
             }
         }
