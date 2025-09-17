@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEditor.EditorTools;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -15,7 +11,7 @@ namespace VehicleDynamics
     public class Suspension : MonoBehaviour
     {
         [SerializeField] private Rigidbody vehicleBody;
-        [SerializeField] public WheelSpindle spindle;
+        [SerializeField] public WheelHub spindle;
         [Tooltip("Only for SolidAxle suspension type")]
         [SerializeField] public Suspension oppositeSuspension; // Tylko gdy typ zawieszenia to SolidAxle
         [Header("Suspension Settings")]
@@ -36,7 +32,7 @@ namespace VehicleDynamics
         private void FixedUpdate()
         {
             Ray ray = new(transform.position, -transform.up);
-            if (Physics.SphereCast(ray, spindle.wheelRadius, out RaycastHit hit, suspensionDistanceConstant))
+            if (Physics.SphereCast(ray, spindle.parentSuspension.wheelRadius, out RaycastHit hit, suspensionDistanceConstant))
             {
                 previousSuspensionDistance = currentSuspensionDistance;
                 currentSuspensionDistance = suspensionDistanceConstant - hit.distance;
@@ -100,44 +96,7 @@ namespace VehicleDynamics
 
             if (spindle != null)
             {
-                Gizmos.DrawWireSphere(transform.position - transform.up * suspensionDistanceConstant, spindle.wheelRadius);
-            }
-        }
-        void OnDrawGizmos()
-        {
-            if (spindle == null) return;
-            switch (suspensionType)
-            {
-                case SuspensionType.MacPherson:
-                    Gizmos.color = Color.green;
-                    Vector3 suspensionMountLeft = transform.position + suspensionMount + transform.forward * 0.1f;
-                    Vector3 suspensionMountRight = transform.position + suspensionMount - transform.forward * 0.1f;
-                    Gizmos.DrawLine(suspensionMountLeft, suspensionMountRight);
-                    Gizmos.DrawLine(suspensionMountLeft, spindle.transform.position - transform.up * spindle.spindleRadius);
-                    Gizmos.DrawLine(suspensionMountRight, spindle.transform.position - transform.up * spindle.spindleRadius);
-                    break;
-                case SuspensionType.DoubleWishbone:
-                    Gizmos.color = Color.cyan;
-                    Vector3 topWishboneLeft = transform.position + suspensionMount + transform.forward * 0.1f + transform.up * spindle.spindleRadius;
-                    Vector3 topWishboneRight = transform.position + suspensionMount - transform.forward * 0.1f + transform.up * spindle.spindleRadius;
-                    Vector3 bottomWishboneLeft = transform.position + suspensionMount + transform.forward * 0.1f - transform.up * spindle.spindleRadius;
-                    Vector3 bottomWishboneRight = transform.position + suspensionMount - transform.forward * 0.1f - transform.up * spindle.spindleRadius;
-                    Gizmos.DrawLine(topWishboneLeft, topWishboneRight);
-                    Gizmos.DrawLine(bottomWishboneLeft, bottomWishboneRight);
-                    Gizmos.DrawLine(topWishboneLeft, spindle.transform.position + transform.up * spindle.spindleRadius);
-                    Gizmos.DrawLine(topWishboneRight, spindle.transform.position + transform.up * spindle.spindleRadius);
-                    Gizmos.DrawLine(bottomWishboneLeft, spindle.transform.position - transform.up * spindle.spindleRadius);
-                    Gizmos.DrawLine(bottomWishboneRight, spindle.transform.position - transform.up * spindle.spindleRadius);
-                    break;
-                case SuspensionType.SolidAxle:
-                    if (oppositeSuspension == null)
-                    {
-                        break;
-                    }
-                    Gizmos.color = Color.magenta;
-                    Gizmos.DrawLine(spindle.transform.position + transform.up * spindle.spindleRadius, oppositeSuspension.spindle.transform.position + transform.up * oppositeSuspension.spindle.spindleRadius);
-                    Gizmos.DrawLine(spindle.transform.position - transform.up * spindle.spindleRadius, oppositeSuspension.spindle.transform.position - transform.up * oppositeSuspension.spindle.spindleRadius);
-                    break;
+                Gizmos.DrawWireSphere(transform.position - transform.up * suspensionDistanceConstant, spindle.parentSuspension.wheelRadius);
             }
         }
     }
