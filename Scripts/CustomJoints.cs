@@ -48,6 +48,52 @@ namespace VehicleDynamics
 
             return joint;
         }
+        public static ConfigurableJoint CreateRevoluteJoint(GameObject bodyA, GameObject bodyB, Vector3 anchor, Vector3 axis, float angularLimit)
+        {
+            var joint = bodyA.AddComponent<ConfigurableJoint>();
+            joint.connectedBody = bodyB.GetComponent<Rigidbody>();
+            joint.anchor = bodyA.transform.InverseTransformPoint(anchor);
+            joint.autoConfigureConnectedAnchor = false;
+            joint.connectedAnchor = bodyB.transform.InverseTransformPoint(anchor);
+
+            joint.xMotion = ConfigurableJointMotion.Locked;
+            joint.yMotion = ConfigurableJointMotion.Locked;
+            joint.zMotion = ConfigurableJointMotion.Locked;
+
+            joint.axis = axis.normalized;
+            joint.secondaryAxis = Vector3.Cross(axis.normalized, Vector3.up).normalized;
+
+            if (axis == Vector3.right)
+            {
+                joint.angularXMotion = ConfigurableJointMotion.Locked;
+                joint.angularYMotion = ConfigurableJointMotion.Limited;
+                joint.angularZMotion = ConfigurableJointMotion.Locked;
+                joint.angularYLimit = new SoftJointLimit { limit = angularLimit };
+            }
+            else if (axis == Vector3.up)
+            {
+                joint.angularXMotion = ConfigurableJointMotion.Limited;
+                joint.angularYMotion = ConfigurableJointMotion.Locked;
+                joint.angularZMotion = ConfigurableJointMotion.Locked;
+                joint.lowAngularXLimit = new SoftJointLimit { limit = -angularLimit };
+                joint.highAngularXLimit = new SoftJointLimit { limit = angularLimit };
+            }
+            else if (axis == Vector3.forward)
+            {
+                joint.angularXMotion = ConfigurableJointMotion.Locked;
+                joint.angularYMotion = ConfigurableJointMotion.Locked;
+                joint.angularZMotion = ConfigurableJointMotion.Limited;
+                joint.angularZLimit = new SoftJointLimit { limit = angularLimit };
+            }
+            else
+            {
+                joint.angularXMotion = ConfigurableJointMotion.Free;
+                joint.angularYMotion = ConfigurableJointMotion.Free;
+                joint.angularZMotion = ConfigurableJointMotion.Free;
+            }
+
+            return joint;
+        }
         public static ConfigurableJoint CreateSphereJoint(GameObject bodyA, GameObject bodyB, Vector3 anchor)
         {
             var joint = bodyA.AddComponent<ConfigurableJoint>();
@@ -118,9 +164,9 @@ namespace VehicleDynamics
 
             joint.targetPosition = new(springLength, 0, 0);
 
-            joint.angularXMotion = ConfigurableJointMotion.Free;
+            joint.angularXMotion = ConfigurableJointMotion.Locked;
             joint.angularYMotion = ConfigurableJointMotion.Free;
-            joint.angularZMotion = ConfigurableJointMotion.Free;
+            joint.angularZMotion = ConfigurableJointMotion.Locked;
 
             return joint;
         }
