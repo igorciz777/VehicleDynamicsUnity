@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: bf9d3e50010b63841ad2f4b525474c21
+guid: c76f34bac21ae7a49b60c504f48dd179
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -8,41 +8,11 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: main_paint
-    second: {fileID: 2100000, guid: 257b6847420a2b747909baae5e4b0d00, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: main_paint.002
-    second: {fileID: 2100000, guid: 257b6847420a2b747909baae5e4b0d00, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: main_paint.004
-    second: {fileID: 2100000, guid: 257b6847420a2b747909baae5e4b0d00, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: main_paint.005
-    second: {fileID: 2100000, guid: 257b6847420a2b747909baae5e4b0d00, type: 2}
+    second: {fileID: 2100000, guid: 54ae54ff112c75540af0c6216ac8bf03, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: tire
-    second: {fileID: 2100000, guid: 6915467e0150ff647857d858c74fff3a, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: tire.002
-    second: {fileID: 2100000, guid: 6915467e0150ff647857d858c74fff3a, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: tire.004
-    second: {fileID: 2100000, guid: 6915467e0150ff647857d858c74fff3a, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: tire.005
     second: {fileID: 2100000, guid: 6915467e0150ff647857d858c74fff3a, type: 2}
   materials:
     materialImportMode: 2
@@ -56,8 +26,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -130,7 +98,7 @@ ModelImporter:
     armStretch: 0.05
     legStretch: 0.05
     feetSpacing: 0
-    globalScale: 0.01
+    globalScale: 1
     rootMotionBoneName: 
     hasTranslationDoF: 0
     hasExtraRoot: 0

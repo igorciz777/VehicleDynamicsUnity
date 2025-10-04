@@ -65,23 +65,23 @@ namespace VehicleDynamics
 
             if (axis == Vector3.right)
             {
-                joint.angularXMotion = ConfigurableJointMotion.Locked;
+                joint.angularXMotion = ConfigurableJointMotion.Free;
                 joint.angularYMotion = ConfigurableJointMotion.Limited;
-                joint.angularZMotion = ConfigurableJointMotion.Locked;
+                joint.angularZMotion = ConfigurableJointMotion.Free;
                 joint.angularYLimit = new SoftJointLimit { limit = angularLimit };
             }
             else if (axis == Vector3.up)
             {
                 joint.angularXMotion = ConfigurableJointMotion.Limited;
-                joint.angularYMotion = ConfigurableJointMotion.Locked;
-                joint.angularZMotion = ConfigurableJointMotion.Locked;
+                joint.angularYMotion = ConfigurableJointMotion.Free;
+                joint.angularZMotion = ConfigurableJointMotion.Free;
                 joint.lowAngularXLimit = new SoftJointLimit { limit = -angularLimit };
                 joint.highAngularXLimit = new SoftJointLimit { limit = angularLimit };
             }
             else if (axis == Vector3.forward)
             {
-                joint.angularXMotion = ConfigurableJointMotion.Locked;
-                joint.angularYMotion = ConfigurableJointMotion.Locked;
+                joint.angularXMotion = ConfigurableJointMotion.Free;
+                joint.angularYMotion = ConfigurableJointMotion.Free;
                 joint.angularZMotion = ConfigurableJointMotion.Limited;
                 joint.angularZLimit = new SoftJointLimit { limit = angularLimit };
             }
@@ -162,11 +162,38 @@ namespace VehicleDynamics
             Vector3 springAxis = (hubAnchor - chassisAnchor).normalized;
             joint.axis = bodyA.transform.InverseTransformDirection(springAxis);
 
+            // Set secondary axis
+            joint.secondaryAxis = Vector3.Cross(joint.axis, Vector3.up).normalized;
+
             joint.targetPosition = new(springLength, 0, 0);
 
             joint.angularXMotion = ConfigurableJointMotion.Locked;
             joint.angularYMotion = ConfigurableJointMotion.Free;
-            joint.angularZMotion = ConfigurableJointMotion.Locked;
+            joint.angularZMotion = ConfigurableJointMotion.Free;
+
+
+            // Drive angular YZ to prevent excessive camber and toe
+            JointDrive angularDrive = new JointDrive
+            {
+                positionSpring = 10000f,
+                positionDamper = 10f,
+                maximumForce = Mathf.Infinity
+            };
+            joint.angularXDrive = angularDrive;
+            joint.angularYZDrive = angularDrive;
+
+            Vector3 chassisUp = bodyA.transform.up;
+            Vector3 chassisFwd = bodyA.transform.forward;
+
+            // Project onto plane perpendicular to chassis forward (ignore caster)
+            Vector3 upAxis = (chassisAnchor - hubAnchor).normalized;
+            Vector3 leftStrutProj = Vector3.ProjectOnPlane(upAxis, chassisFwd).normalized;
+            Vector3 upProj = Vector3.ProjectOnPlane(chassisUp, chassisFwd).normalized;
+
+            float angle = 360f - Vector3.SignedAngle(upProj, leftStrutProj, chassisFwd);
+
+            joint.targetRotation =
+                Quaternion.AngleAxis(angle, Vector3.forward);
 
             return joint;
         }

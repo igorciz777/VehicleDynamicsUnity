@@ -11,30 +11,34 @@ namespace VehicleDynamics
         public float angle = 5.0f; // Angle of attack in degrees
         public float liftCoefficient = 1.2f; // Lift coefficient (Cl)
         public float dragCoefficient = 0.1f; // Drag coefficient (Cd)
-        private const float airDensity = 1.225f; // kg/m^3
+        private float airDensity = 1.225f; // kg/m^3
         private Rigidbody vehicleBody;
         private float vehicleVelocity = 0f;
         private Vector3 wingNormal;
         private Vector3 wingAreaVector;
         private float wingArea;
+        private SimulationSettings simSettings;
         void Start()
         {
             vehicleBody = GetComponentInParent<Rigidbody>();
             wingArea = length * width;
             wingNormal = Quaternion.AngleAxis(angle, transform.right) * transform.up;
+            simSettings = Resources.Load<SimulationSettings>("Settings/SimulationSettings");
+            Debug.Assert(simSettings != null, "SimulationSettings asset not found in Resources folder.");
+            airDensity = simSettings.airDensity;
             wingAreaVector = wingNormal * wingArea;
         }
         void FixedUpdate()
         {
             if (vehicleBody == null) return;
 
-            vehicleVelocity = vehicleBody.velocity.magnitude;
+            vehicleVelocity = vehicleBody.linearVelocity.magnitude;
 
             // Calculate the wing normal based on angle of attack
             Vector3 wingNormal = Quaternion.AngleAxis(angle, transform.right) * transform.up;
 
             // Calculate lift and drag directions
-            Vector3 velocityDir = vehicleBody.velocity.normalized;
+            Vector3 velocityDir = vehicleBody.linearVelocity.normalized;
             Vector3 liftDirection = wingNormal; // Use the rotated normal
             Vector3 dragDirection = -velocityDir;
 

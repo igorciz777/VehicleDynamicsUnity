@@ -54,11 +54,12 @@ namespace VehicleDynamics
         public float damperConstant = 2000f;
 
         [Header("Wheel Parameters")]
+        // public float hubSpacing = 0.1f; // Distance between the spindle and the wheel center
+        // public float wheelRadius = 0.3f;
+        // public float wheelWidth = 0.2f;                                          // Moved to wheelhub
+        // public float wheelMass = 10f;
+        // public float wheelRollingResistance = 0.25f; // aka wheel damping rate
         public float hubSpacing = 0.1f; // Distance between the spindle and the wheel center
-        public float wheelRadius = 0.3f;
-        public float wheelWidth = 0.2f;
-        public float wheelMass = 10f;
-        public float wheelRollingResistance = 0.25f; // aka wheel damping rate
         public float ackermanPercentage = 0.25f;
         public float maxSteeringAngle = 45f;
         public float camberAdjustment = 0f;
@@ -85,12 +86,16 @@ namespace VehicleDynamics
         // Spring joints
         private ConfigurableJoint leftSpringJoint;
         private ConfigurableJoint rightSpringJoint;
+        // Anti-roll bar torsion spring
+        private ConfigurableJoint leftAntirollBarJoint;
+        private ConfigurableJoint rightAntirollBarJoint;
 
         // New gameobjects for joints
         private GameObject leftLowerWishbone;
         private GameObject leftUpperWishbone;
         private GameObject rightLowerWishbone;
         private GameObject rightUpperWishbone;
+        private GameObject antiRollBar;
 
         // WheelHub objects
         private WheelHub leftWheelHub;
@@ -99,14 +104,21 @@ namespace VehicleDynamics
         // Wheel rate
         [HideInInspector] public float leftWheelRate = 0f;
         [HideInInspector] public float rightWheelRate = 0f;
+        // Wheel damping rate
+        [HideInInspector] public float leftWheelDampingRate = 0f;
+        [HideInInspector] public float rightWheelDampingRate = 0f;
 
-        void Awake()
+        void Start()
         {
+            // Get vehicle body
+            if (vehicleBody == null)
+            {
+                vehicleBody = GetComponentInParent<Rigidbody>();
+                Debug.Assert(vehicleBody != null, "Rigidbody component not found on parent VehicleModel GameObject.");
+            }
             // Setup hubs
             leftWheelHub = leftWheelHubMount.GetComponent<WheelHub>();
             rightWheelHub = rightWheelHubMount.GetComponent<WheelHub>();
-            leftWheelHub.GetComponent<Rigidbody>().mass = wheelMass;
-            rightWheelHub.GetComponent<Rigidbody>().mass = wheelMass;
 
             if (leftVisualHub != null)
             {
@@ -133,10 +145,11 @@ namespace VehicleDynamics
                 leftLowerWishbone.transform.SetParent(transform);
                 leftLowerWishbone.transform.position = (leftLowerWishboneChassisMount.position + leftLowerWishboneHubMount.position) * 0.5f;
                 leftLowerWishbone.AddComponent<Rigidbody>().mass = 5f;
-                leftLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, leftLowerWishbone, leftLowerWishboneChassisMount.position, Vector3.right, 3f);
+                leftLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, leftLowerWishbone, leftLowerWishboneChassisMount.position, Vector3.right, 30f);
                 leftLowerWishboneBall = CustomJoints.CreateSphereJoint(leftLowerWishbone, leftWheelHubMount.gameObject, leftLowerWishboneHubMount.position);
-                leftLowerWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
-                leftLowerWishboneBall.angularZLimit = new SoftJointLimit { limit = 10f };
+                // leftLowerWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
+                // leftLowerWishboneBall.angularZLimit = new SoftJointLimit { limit = 10f };
+                leftLowerWishboneHinge.angularXMotion = ConfigurableJointMotion.Locked;
                 leftLowerWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
 
                 // Right side joints
@@ -145,10 +158,11 @@ namespace VehicleDynamics
                 rightLowerWishbone.transform.SetParent(transform);
                 rightLowerWishbone.transform.position = (rightLowerWishboneChassisMount.position + rightLowerWishboneHubMount.position) * 0.5f;
                 rightLowerWishbone.AddComponent<Rigidbody>().mass = 5f;
-                rightLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, rightLowerWishbone, rightLowerWishboneChassisMount.position, Vector3.right, 3f);
+                rightLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, rightLowerWishbone, rightLowerWishboneChassisMount.position, Vector3.right, 30f);
                 rightLowerWishboneBall = CustomJoints.CreateSphereJoint(rightLowerWishbone, rightWheelHubMount.gameObject, rightLowerWishboneHubMount.position);
-                rightLowerWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
-                rightLowerWishboneBall.angularZLimit = new SoftJointLimit { limit = 10f };
+                // rightLowerWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
+                // rightLowerWishboneBall.angularZLimit = new SoftJointLimit { limit = 10f };
+                rightLowerWishboneHinge.angularXMotion = ConfigurableJointMotion.Locked;
                 rightLowerWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
 
                 // Set axis to be relative to the spring
@@ -164,8 +178,8 @@ namespace VehicleDynamics
                     leftUpperWishbone.AddComponent<Rigidbody>().mass = 5f;
                     leftUpperWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, leftUpperWishbone, leftUpperWishboneChassisMount.position, Vector3.right);
                     leftUpperWishboneBall = CustomJoints.CreateSphereJoint(leftUpperWishbone, leftWheelHubMount.gameObject, leftUpperWishboneHubMount.position);
-                    leftUpperWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
-                    leftUpperWishboneBall.angularZLimit = new SoftJointLimit { limit = 45f };
+                    // leftUpperWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
+                    // leftUpperWishboneBall.angularZLimit = new SoftJointLimit { limit = 45f };
                     leftUpperWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
 
                     // Right upper wishbone
@@ -175,37 +189,37 @@ namespace VehicleDynamics
                     rightUpperWishbone.AddComponent<Rigidbody>().mass = 5f;
                     rightUpperWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, rightUpperWishbone, rightUpperWishboneChassisMount.position, Vector3.right);
                     rightUpperWishboneBall = CustomJoints.CreateSphereJoint(rightUpperWishbone, rightWheelHubMount.gameObject, rightUpperWishboneHubMount.position);
-                    rightUpperWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
-                    rightUpperWishboneBall.angularZLimit = new SoftJointLimit { limit = 45f };
+                    // rightUpperWishboneBall.angularZMotion = ConfigurableJointMotion.Limited;
+                    // rightUpperWishboneBall.angularZLimit = new SoftJointLimit { limit = 45f };
                     rightUpperWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
 
                     // Set axis to be relative to the spring
                     leftUpperWishboneHinge.axis = vehicleBody.transform.InverseTransformDirection(leftUpperWishboneHubMount.position - leftLowerWishboneHubMount.position).normalized;
                     rightUpperWishboneHinge.axis = vehicleBody.transform.InverseTransformDirection(rightUpperWishboneHubMount.position - rightLowerWishboneHubMount.position).normalized;
                 }
-                if (suspensionType == SuspensionType.MacPherson)
-                {
-                    //springJoint.angularXMotion = ConfigurableJointMotion.Locked;
-                    //springJoint.angularZMotion = ConfigurableJointMotion.Locked;
-                }
             }
             else // Leaf Spring Suspension
+                 // TODO: sideways force of the leafs are too weak, axle moves sideways too much
+                 // TODO: rethink wheel rate for leafs
+                 // TODO: use one spring instead? same effect as leafs but limit YZ movement
+                 // TODO: merge leaf hub mount with spring hub mount?
             {
+                float leafSpringLength = Vector3.Distance(leftFrontLeafChassisMount.position, leftRearLeafChassisMount.position) * 0.5f;
                 // Left side joints
                 leftSpringJoint = CustomJoints.CreateSpringJoint(
                     vehicleBody.gameObject, leftWheelHubMount.gameObject,
                     leftSpringChassisMount.position, leftSpringHubMount.position,
                     springConstant, damperConstant, springLength);
 
-                frontLeftLeafSpringJoint = CustomJoints.CreateSpringJoint(
-                    vehicleBody.gameObject, leftWheelHubMount.gameObject,
-                    leftFrontLeafChassisMount.position, leftLeafHubMount.position,
-                    springConstant / 2f, damperConstant / 2f, springLength);
+                // frontLeftLeafSpringJoint = CustomJoints.CreateSpringJoint(
+                //     vehicleBody.gameObject, leftWheelHubMount.gameObject,
+                //     leftFrontLeafChassisMount.position, leftLeafHubMount.position,
+                //     springConstant / 2f, damperConstant / 2f, leafSpringLength);
 
-                rearLeftLeafSpringJoint = CustomJoints.CreateSpringJoint(
-                    vehicleBody.gameObject, leftWheelHubMount.gameObject,
-                    leftRearLeafChassisMount.position, leftLeafHubMount.position,
-                    springConstant / 2f, damperConstant / 2f, springLength);
+                // rearLeftLeafSpringJoint = CustomJoints.CreateSpringJoint(
+                //     vehicleBody.gameObject, leftWheelHubMount.gameObject,
+                //     leftRearLeafChassisMount.position, leftLeafHubMount.position,
+                //     springConstant / 2f, damperConstant / 2f, leafSpringLength);
 
 
                 // Right side joints
@@ -214,18 +228,32 @@ namespace VehicleDynamics
                     rightSpringChassisMount.position, rightSpringHubMount.position,
                     springConstant, damperConstant, springLength);
 
-                rightFrontLeafSpringJoint = CustomJoints.CreateSpringJoint(
-                    vehicleBody.gameObject, rightWheelHubMount.gameObject,
-                    rightFrontLeafChassisMount.position, rightLeafHubMount.position,
-                    springConstant / 2f, damperConstant / 2f, springLength);
+                // rightFrontLeafSpringJoint = CustomJoints.CreateSpringJoint(
+                //     vehicleBody.gameObject, rightWheelHubMount.gameObject,
+                //     rightFrontLeafChassisMount.position, rightLeafHubMount.position,
+                //     springConstant / 2f, damperConstant / 2f, leafSpringLength);
 
-                rightRearLeafSpringJoint = CustomJoints.CreateSpringJoint(
-                    vehicleBody.gameObject, rightWheelHubMount.gameObject,
-                    rightRearLeafChassisMount.position, rightLeafHubMount.position,
-                    springConstant / 2f, damperConstant / 2f, springLength);
+                // rightRearLeafSpringJoint = CustomJoints.CreateSpringJoint(
+                //     vehicleBody.gameObject, rightWheelHubMount.gameObject,
+                //     rightRearLeafChassisMount.position, rightLeafHubMount.position,
+                //     springConstant / 2f, damperConstant / 2f, leafSpringLength);
+
+                // Disable spring angular drive for solid axle (the axle already prevents camber and toe)
+                // leftSpringJoint.angularXDrive = new JointDrive { positionSpring = 0f, positionDamper = 0f, maximumForce = 0f };
+                // leftSpringJoint.angularYZDrive = new JointDrive { positionSpring = 0f, positionDamper = 0f, maximumForce = 0f };
+                // rightSpringJoint.angularXDrive = new JointDrive { positionSpring = 0f, positionDamper = 0f, maximumForce = 0f };
+                // rightSpringJoint.angularYZDrive = new JointDrive { positionSpring = 0f, positionDamper = 0f, maximumForce = 0f };
+                leftSpringJoint.angularYMotion = ConfigurableJointMotion.Locked;
+                rightSpringJoint.angularYMotion = ConfigurableJointMotion.Locked;
 
                 axleJoint = CustomJoints.CreateAxleJoint(leftWheelHubMount.gameObject, rightWheelHubMount.gameObject);
+                axleJoint = CustomJoints.CreateAxleJoint(rightWheelHubMount.gameObject, leftWheelHubMount.gameObject);
             }
+
+            // Simple wheel damper rate solution
+            // Works better with PhysX dampers than getting the rate from motion ratio
+            leftWheelDampingRate = leftWheelHub.wheelMass + leftWheelHub.tireMass;
+            rightWheelDampingRate = rightWheelHub.wheelMass + rightWheelHub.tireMass;
         }
         void FixedUpdate()
         {
@@ -238,20 +266,7 @@ namespace VehicleDynamics
             Vector3 leftSpringHubAnchor = leftSpringJoint.connectedBody.transform.TransformPoint(leftSpringJoint.connectedAnchor);
             Vector3 rightSpringChassisAnchor = rightSpringJoint.transform.TransformPoint(rightSpringJoint.anchor);
             Vector3 rightSpringHubAnchor = rightSpringJoint.connectedBody.transform.TransformPoint(rightSpringJoint.connectedAnchor);
-            // Anti-roll bar forces
-            if (hasAntirollBar)
-            {
 
-                float leftSpringLength = Vector3.Distance(leftSpringChassisAnchor, leftSpringHubAnchor);
-                float leftCompression = Mathf.Clamp01((springLength - leftSpringLength) / springLength);
-                float rightSpringLength = Vector3.Distance(rightSpringChassisAnchor, rightSpringHubAnchor);
-                float rightCompression = Mathf.Clamp01((springLength - rightSpringLength) / springLength);
-
-                float antirollForce = (leftCompression - rightCompression) * antirollBarStiffness;
-
-                leftWheelHub.hubBody.AddForceAtPosition(vehicleBody.transform.up * -antirollForce, leftSpringHubMount.position);
-                rightWheelHub.hubBody.AddForceAtPosition(vehicleBody.transform.up * antirollForce, rightSpringHubMount.position);
-            }
             // Calculate wheel rates
             float Ls_left = Vector3.Distance(leftSpringChassisAnchor, leftSpringHubAnchor);
             float Lw_left = Vector3.Distance(leftSpringHubAnchor, leftWheelHub.wheelCenter);
@@ -260,6 +275,29 @@ namespace VehicleDynamics
             float Ls_right = Vector3.Distance(rightSpringChassisAnchor, rightSpringHubAnchor);
             float Lw_right = Vector3.Distance(rightSpringHubAnchor, rightWheelHub.wheelCenter);
             rightWheelRate = Mathf.Pow(Ls_right / Lw_right, 2) * springConstant;
+
+            // Calculate wheel damping rates
+            // Cwheel = Cdamp * motion ratio^2
+            // leftWheelDampingRate = Mathf.Pow(Ls_left / Lw_left, 2) * damperConstant;
+            // rightWheelDampingRate = Mathf.Pow(Ls_right / Lw_right, 2) * damperConstant;
+
+            if (hasAntirollBar)
+            {
+                float leftCompression = Ls_left - springLength;
+                float rightCompression = Ls_right - springLength;
+                float antirollForce = (leftCompression - rightCompression) * antirollBarStiffness;
+
+                // leftWheelHub.hubBody.AddForceAtPosition(leftWheelHub.hubBody.transform.up * -antirollForce, leftSpringHubAnchor);
+                // rightWheelHub.hubBody.AddForceAtPosition(rightWheelHub.hubBody.transform.up * antirollForce, rightSpringHubAnchor);
+                vehicleBody.AddTorque(vehicleBody.transform.forward * antirollForce);
+            }
+        }
+        public void SetBrakeInput(float brakeInput)
+        {
+            float leftBrakeTorque = brakeInput * leftWheelHub.maxBrakeTorque;
+            float rightBrakeTorque = brakeInput * rightWheelHub.maxBrakeTorque;
+            leftWheelHub.ApplyBrakeTorque(leftBrakeTorque);
+            rightWheelHub.ApplyBrakeTorque(rightBrakeTorque);
         }
         [ContextMenu("Find Geometry Objects")]
         public void FindGameObjects()
@@ -598,6 +636,30 @@ namespace VehicleDynamics
                     rightWheelHubMount.position
                 );
             }
+
+            // Draw anti-roll bar
+            if (hasAntirollBar)
+            {
+                Gizmos.color = Color.red;
+                if (leftAntirollBarJoint != null)
+                {
+                    Gizmos.DrawLine(
+                        leftAntirollBarJoint.transform.TransformPoint(leftAntirollBarJoint.anchor),
+                        leftAntirollBarJoint.connectedBody.transform.TransformPoint(leftAntirollBarJoint.connectedAnchor)
+                    );
+                    Gizmos.DrawSphere(leftAntirollBarJoint.transform.TransformPoint(leftAntirollBarJoint.anchor), sphereSize);
+                    Gizmos.DrawSphere(leftAntirollBarJoint.connectedBody.transform.TransformPoint(leftAntirollBarJoint.connectedAnchor), sphereSize);
+                }
+                if (rightAntirollBarJoint != null)
+                {
+                    Gizmos.DrawLine(
+                        rightAntirollBarJoint.transform.TransformPoint(rightAntirollBarJoint.anchor),
+                        rightAntirollBarJoint.connectedBody.transform.TransformPoint(rightAntirollBarJoint.connectedAnchor)
+                    );
+                    Gizmos.DrawSphere(rightAntirollBarJoint.transform.TransformPoint(rightAntirollBarJoint.anchor), sphereSize);
+                    Gizmos.DrawSphere(rightAntirollBarJoint.connectedBody.transform.TransformPoint(rightAntirollBarJoint.connectedAnchor), sphereSize);
+                }
+            }
         }
         void OnDrawGizmosSelected()
         {
@@ -619,8 +681,8 @@ namespace VehicleDynamics
                 Gizmos.color = Color.gray;
                 Vector3 wheelCenter = leftWheelHubMount.position + leftWheelHubMount.right * (leftWheelHub.rightSided ? hubSpacing : -hubSpacing);
                 //Gizmos.DrawWireSphere(wheelCenter, wheelRadius);
-                Vector3 wheelEdge1 = wheelCenter + leftWheelHubMount.forward * (wheelWidth * 0.5f);
-                Vector3 wheelEdge2 = wheelCenter - leftWheelHubMount.forward * (wheelWidth * 0.5f);
+                Vector3 wheelEdge1 = wheelCenter + leftWheelHubMount.forward * (leftWheelHub.wheelWidth * 0.5f);
+                Vector3 wheelEdge2 = wheelCenter - leftWheelHubMount.forward * (leftWheelHub.wheelWidth * 0.5f);
                 Gizmos.DrawLine(wheelEdge1, wheelEdge2);
             }
             if (rightWheelHub != null)
@@ -628,8 +690,8 @@ namespace VehicleDynamics
                 Gizmos.color = Color.gray;
                 Vector3 wheelCenter = rightWheelHubMount.position + rightWheelHubMount.right * (rightWheelHub.rightSided ? hubSpacing : -hubSpacing);
                 //Gizmos.DrawWireSphere(wheelCenter, wheelRadius);
-                Vector3 wheelEdge1 = wheelCenter + rightWheelHubMount.forward * (wheelWidth * 0.5f);
-                Vector3 wheelEdge2 = wheelCenter - rightWheelHubMount.forward * (wheelWidth * 0.5f);
+                Vector3 wheelEdge1 = wheelCenter + rightWheelHubMount.forward * (rightWheelHub.wheelWidth * 0.5f);
+                Vector3 wheelEdge2 = wheelCenter - rightWheelHubMount.forward * (rightWheelHub.wheelWidth * 0.5f);
                 Gizmos.DrawLine(wheelEdge1, wheelEdge2);
             }
         }

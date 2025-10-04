@@ -10,80 +10,67 @@ namespace VehicleDynamics
         {
             Open,
             LimitedSlip,
-            Locking
+            Locked
         }
         [Header("Differential Parameters")]
         public DifferentialType differentialType = DifferentialType.Open;
-        [Range(0f, 1f)] public float lockRatio = 0.2f; // For limited slip differentials
         public WheelHub leftWheel;
         public WheelHub rightWheel;
-        public float differentialInertia = 0.05f; // kg*m^2
-        private float leftWheelSpeed = 0f; // rad/s
-        private float rightWheelSpeed = 0f; // rad/s
-        private float differentialSpeed = 0f; // rad/s
-        private float differentialTorque = 0f; // Nm
-        private float leftWheelTorque = 0f; // Nm
-        private float rightWheelTorque = 0f; // Nm
-        private float differentialAngularVelocity = 0f; // rad/s
         void Start()
         {
             leftWheel.wheel.isPowered = true;
             rightWheel.wheel.isPowered = true;
         }
-        public void Step(float inputTorque, float driveshaftAngularVelocity)
+        public int PoweredWheelCount()
         {
-            // Update wheel speeds
-            leftWheelSpeed = leftWheel.wheel.wheelAngularVelocity;
-            rightWheelSpeed = rightWheel.wheel.wheelAngularVelocity;
+            int count = 0;
+            if (leftWheel != null && leftWheel.wheel.isPowered) count++;
+            if (rightWheel != null && rightWheel.wheel.isPowered) count++;
+            return count;
+        }
 
-            // Calculate differential speed
-            differentialSpeed = (leftWheelSpeed + rightWheelSpeed) / 2f;
+        public float GetAverageWheelSpeed()
+        {
+            float sum = 0f;
+            int count = 0;
+            if (leftWheel != null)
+            {
+                sum += leftWheel.wheel.wheelAngularVelocity;
+                count++;
+            }
+            if (rightWheel != null)
+            {
+                sum += rightWheel.wheel.wheelAngularVelocity;
+                count++;
+            }
+            return count > 0 ? sum / count : 0f;
+        }
 
-            // Calculate speed difference
-            float speedDifference = Mathf.Abs(leftWheelSpeed - rightWheelSpeed);
+        public void Step(float inputTorque, float brakingTorque)
+        {
+            //inputTorque *= differentialRatio; // Torque at the differential
 
             // Calculate torque distribution based on differential type
             switch (differentialType)
             {
                 case DifferentialType.Open:
-                    leftWheelTorque = inputTorque * 0.5f;
-                    rightWheelTorque = inputTorque * 0.5f;
+                    // Open diff: split torque
+                    leftWheel.ApplyDriveTorque(inputTorque * 0.5f);
+                    rightWheel.ApplyDriveTorque(inputTorque * 0.5f);
                     break;
 
                 case DifferentialType.LimitedSlip:
-                    if (speedDifference < lockRatio)
-                    {
-                        leftWheelTorque = inputTorque * 0.5f;
-                        rightWheelTorque = inputTorque * 0.5f;
-                    }
-                    else
-                    {
-                        float slipFactor = Mathf.Clamp01((speedDifference - lockRatio) / lockRatio);
-                        leftWheelTorque = inputTorque * (0.5f - slipFactor * 0.25f);
-                        rightWheelTorque = inputTorque * (0.5f + slipFactor * 0.25f);
-                    }
+                    //TODO: Implement limited slip differential behavior
                     break;
 
-                case DifferentialType.Locking:
-                    if (speedDifference > 0.1f)
-                    {
-                        leftWheelTorque = inputTorque * 0.5f;
-                        rightWheelTorque = inputTorque * 0.5f;
-                    }
-                    else
-                    {
-                        leftWheelTorque = inputTorque * 0.5f;
-                        rightWheelTorque = inputTorque * 0.5f;
-                    }
+                case DifferentialType.Locked:
+                    // TODO: Implement locked differential behavior
                     break;
             }
 
-            // Apply torques to wheels
-            leftWheel.ApplyDriveTorque(leftWheelTorque);
-            rightWheel.ApplyDriveTorque(rightWheelTorque);
-
-            // Update differential angular velocity
-            differentialAngularVelocity += (inputTorque - (leftWheelTorque + rightWheelTorque)) / differentialInertia * Time.fixedDeltaTime;
+            // Apply braking torque to both wheels
+            leftWheel.ApplyBrakeTorque(brakingTorque * 0.5f);
+            rightWheel.ApplyBrakeTorque(brakingTorque * 0.5f);
         }
     }
 }
