@@ -9,7 +9,7 @@ namespace VehicleDynamics
     {
         [Header("Subsystem References")]
         public Drivetrain drivetrain;
-        public KinematicSuspension[] carSuspension;
+        public Suspension[] carSuspension;
 
         [Header("Unified Vehicle Inputs")]
         [Range(-1f, 1f)] public float steeringInput = 0f;
@@ -19,6 +19,8 @@ namespace VehicleDynamics
         public bool handbrake = false;
         public bool shiftUp = false;
         public bool shiftDown = false;
+        [Header("FFB")]
+        public float alignmentTorque = 0f;
         [Header("Vehicle Parameters")]
         public float steeringWheelMaxAngle = 1080f;
         public float userWheelMaxAngle = 900f;
@@ -46,7 +48,7 @@ namespace VehicleDynamics
             // Get suspension
             if (carSuspension == null || carSuspension.Length == 0)
             {
-                carSuspension = GetComponentsInChildren<KinematicSuspension>();
+                carSuspension = GetComponentsInChildren<Suspension>();
                 Debug.Assert(carSuspension != null && carSuspension.Length > 0, "No KinematicSuspension components found in children of VehicleModel GameObject.");
             }
 
@@ -64,6 +66,15 @@ namespace VehicleDynamics
             Application.targetFrameRate = simSettings.maxFrameRate;
             Time.timeScale = simSettings.timeMultiplier;
             Physics.defaultSolverIterations = simSettings.solverIterations;
+
+            // Setup visual steering wheel
+            if (visualSteeringWheel != null)
+            {
+                GameObject wheel = Instantiate(visualSteeringWheel, visualSteeringWheel.transform.position, visualSteeringWheel.transform.rotation, transform);
+                visualSteeringWheel.transform.SetParent(wheel.transform);
+                visualSteeringWheel.transform.localRotation = Quaternion.identity;
+
+            }
         }
         void FixedUpdate()
         {
@@ -74,7 +85,7 @@ namespace VehicleDynamics
             }
 
             float steeringWheelInput = Mathf.Clamp(steeringInput * (userWheelMaxAngle / steeringWheelMaxAngle), -1f, 1f);
-
+            alignmentTorque = 0f;
             foreach (var suspension in carSuspension)
             {
                 if (suspension != null)
@@ -83,6 +94,7 @@ namespace VehicleDynamics
                     suspension.steeringInput = steeringWheelInput;
                     // Apply braking torque
                     suspension.SetBrakeInput(brakeInput);
+                    alignmentTorque = suspension.GetAlignmentTorque();
                 }
             }
 
@@ -91,8 +103,9 @@ namespace VehicleDynamics
             {
                 // Rotate steering wheel around its forward axis
                 float steeringAngle = steeringWheelInput * steeringWheelMaxAngle * 0.5f;
-                Vector3 rotationAxis = visualSteeringWheel.transform.forward;
-                visualSteeringWheel.transform.RotateAround(visualSteeringWheel.transform.position, rotationAxis, steeringAngle - visualSteeringWheel.transform.localEulerAngles.z);
+                // Vector3 rotationAxis = visualSteeringWheel.transform.forward;
+                // visualSteeringWheel.transform.RotateAround(visualSteeringWheel.transform.position, rotationAxis, steeringAngle - visualSteeringWheel.transform.localEulerAngles.z);
+                visualSteeringWheel.transform.localEulerAngles = new Vector3(0f, 0f, steeringAngle);
             }
 
             // Update displays
@@ -112,6 +125,26 @@ namespace VehicleDynamics
             Gizmos.DrawWireSphere(comWorld, 0.1f);
         }
 
+
+        public Vector3 GetContactForce()
+        {
+            Vector3 totalForce = Vector3.zero;
+            foreach (var suspension in carSuspension)
+            {
+                totalForce += suspension.GetContactForce();
+            }
+            return totalForce;
+        }
+
+        public Vector3 GetLeverArm()
+        {
+            Vector3 totalLeverArm = Vector3.zero;
+            foreach (var suspension in carSuspension)
+            {
+                totalLeverArm += suspension.GetLeverArm();
+            }
+            return totalLeverArm;
+        }
 
         // https://gist.github.com/Maesla/7b3cffbda7d0a5b02aa7166d3eed5def
         // public static void DiagonalizeInertiaTensor(Matrix4x4 m, out Vector3 inertiaTensor, out Quaternion inertiaTensorRotation)

@@ -14,8 +14,8 @@ namespace VehicleDynamics
         }
         [Header("Differential Parameters")]
         public DifferentialType differentialType = DifferentialType.Open;
-        public WheelHub leftWheel;
-        public WheelHub rightWheel;
+        public Hub leftWheel;
+        public Hub rightWheel;
         void Start()
         {
             leftWheel.wheel.isPowered = true;

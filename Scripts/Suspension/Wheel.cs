@@ -10,8 +10,8 @@ namespace VehicleDynamics
     {
         public enum TireFrictionModel
         {
-            PacejkaSimplified,
-            Pacejka2002,
+            MF_Simplified,
+            MF,
         }
 
         [Header("Wheel Parameters")]
@@ -19,7 +19,7 @@ namespace VehicleDynamics
         [SerializeField] private float nominalLoad = 3500f; // Fz0
 
         [Header("Tire Model")]
-        public TireFrictionModel tireFrictionModel = TireFrictionModel.Pacejka2002;
+        public TireFrictionModel tireFrictionModel = TireFrictionModel.MF;
         public LayerMask layerMask = ~0; // Layers to consider for ground contact
         public Vector2 frictionCoefficient = new(1.0f, 1.0f); // (longitudinal mu_x, lateral mu_y)
 
@@ -37,7 +37,7 @@ namespace VehicleDynamics
         [SerializeField] private float wheelEffectiveRadius = 0f;
 
         [Header("References")]
-        public WheelHub hub;
+        public Hub hub;
         private Rigidbody hubBody;
         private Rigidbody vehicleBody;
 
@@ -49,11 +49,12 @@ namespace VehicleDynamics
         private float tirePenetrationVelocity = 0f;
         private float wheelStiffnessForce = 0f;
         private float wheelDampingForce = 0f;
+        private float alignmentTorque = 0f;
 
         // Add a cap for the maximum vertical force
-        private const float maxVerticalForce = 20000f;
+        private const float maxVerticalForce = 200000f;
 
-        private Tire tireModel;
+        public Tire tireModel;
         private TireInput tireInput;
 
         void Start()
@@ -67,9 +68,9 @@ namespace VehicleDynamics
             // Initialize tire model
             tireModel = tireFrictionModel switch
             {
-                TireFrictionModel.PacejkaSimplified => new PacejkaSimplified(),
-                TireFrictionModel.Pacejka2002 => new PAC2002(),
-                _ => new PacejkaSimplified(),
+                TireFrictionModel.MF_Simplified => new MagicFormulaSimplified(),
+                TireFrictionModel.MF => new MagicFormula(),
+                _ => new MagicFormulaSimplified(),
             };
 
             // Initialize tire input
@@ -146,15 +147,11 @@ namespace VehicleDynamics
                 // This keeps wheels above ground, the suspension is handled by spring joints
                 currTirePenDistance = rayLength - averageDistance;
 
-                tirePenetrationVelocity = Vector3.Dot(hubBody.GetPointVelocity(averageHitPoint), transform.up);
+                tirePenetrationVelocity = Vector3.Dot(hubBody.GetPointVelocity(averageHitPoint), averageHitNormal);
 
-                // Forces from suspension
-                wheelStiffnessForce = hub.wheelRate * currTirePenDistance;
-                wheelDampingForce = hub.wheelDamping * -tirePenetrationVelocity;
-
-                // Forces from tire
-                wheelStiffnessForce += -hub.radialTireStiffness * currTirePenDistance;
-                wheelDampingForce += 2f * hub.radialDampingRatio * Mathf.Sqrt(hub.tireMass * hub.radialTireStiffness) * -tirePenetrationVelocity;
+                // TODO: make the constant a parameter that makes sense, pressure?
+                wheelStiffnessForce = maxVerticalForce * currTirePenDistance;
+                wheelDampingForce = -tirePenetrationVelocity * hub.radialTireStiffness;
 
                 // Sum vertical force and clamp to max
                 float verticalForce = wheelStiffnessForce + wheelDampingForce;
@@ -189,39 +186,45 @@ namespace VehicleDynamics
 
                 // Calculate road forces (Fx, 0, Fy, Mz)
                 Vector4 tireForces = tireModel.GetForcesAndTorque(ref tireInput);
-                // Vector3 roadForce = tireForces.x * transform.forward + tireForces.z * transform.right;
                 Vector3 roadForce = tireForces.x * Vector3.ProjectOnPlane(transform.forward, averageHitNormal).normalized
                                   + tireForces.z * Vector3.ProjectOnPlane(transform.right, averageHitNormal).normalized;
 
 
-                // hubBody.AddForceAtPosition(verticalForce * transform.up, averageHitPoint, ForceMode.Force);
-                hubBody.AddForceAtPosition(verticalForce * averageHitNormal, averageHitPoint, ForceMode.Force);
+                if(Mathf.Abs(verticalForce) > Mathf.Epsilon)
+                    hubBody.AddForceAtPosition(verticalForce * averageHitNormal, averageHitPoint, ForceMode.Force);
+
+                // Apply road forces to vehicle body at contact patch
                 vehicleBody.AddForceAtPosition(roadForce, averageHitPoint, ForceMode.Force);
+
                 // Add aligning torque
-                vehicleBody.AddTorque(tireForces.w * transform.up, ForceMode.Force);
+                alignmentTorque = tireForces.w;
+                if (Mathf.Abs(alignmentTorque) > Mathf.Epsilon)
+                    hubBody.AddTorque(alignmentTorque * transform.up, ForceMode.Force);
 
-                // Correction force (unstable maybe)
-                // if (averageDistance < wheelUnloadedRadius * 0.9f)
-                // {
-                //     // Clamp correction force as well
-                //     float correctionMagnitude = Mathf.Clamp(wheelUnloadedRadius - averageDistance, 0f, wheelUnloadedRadius * 0.9f);
-                //     // Vector3 correctionForce = correctionMagnitude * transform.up * 10000f;
-                //     Vector3 correctionForce = 10000f * correctionMagnitude * averageHitNormal;
-                //     correctionForce = Vector3.ClampMagnitude(correctionForce, maxVerticalForce);
-                //     hubBody.AddForceAtPosition(correctionForce, averageHitPoint, ForceMode.Acceleration);
-                // }
+                // Calculate rolling resistance moment
+                float rollingResistanceMoment = tireModel.GetRollingResistanceMoment();
 
-                float Fz = Vector3.Dot(roadForce, transform.forward); // Longitudinal force at contact patch
+                // Apply rolling resistance to wheel angular velocity
+                float rollingResistanceTorque = rollingResistanceMoment * Mathf.Sign(wheelAngularVelocity);
+                float rollingResistanceDeceleration = rollingResistanceTorque / wheelInertia;
+
+                if (Mathf.Abs(wheelAngularVelocity) >= Mathf.Abs(rollingResistanceDeceleration * Time.fixedDeltaTime))
+                {
+                    wheelAngularVelocity -= rollingResistanceDeceleration * Time.fixedDeltaTime;
+                }
+                else
+                {
+                    wheelAngularVelocity = 0f;
+                }
+
+                // Longitudinal force (Fz in unity coordinates)
+                float Fy = tireForces.x;
 
                 // Apply reaction torque from tire force to wheel angular velocity
-                float tireTorque = -Fz * wheelEffectiveRadius; // Negative: tire force resists wheel spin
+                float tireTorque = -Fy * wheelEffectiveRadius; // Negative: tire force resists wheel spin
                 wheelAngularAcceleration = tireTorque / wheelInertia;
                 wheelAngularVelocity += wheelAngularAcceleration * Time.fixedDeltaTime;
 
-                if (hub.tireSquealClip != null)
-                {
-                    UpdateTireSqueal();
-                }
 
                 // Draw tire forces
                 DrawTireForces(ref averageHitPoint, ref roadForce);
@@ -236,6 +239,11 @@ namespace VehicleDynamics
                 wheelDampingForce = 0f;
                 wheelLoadedRadius = wheelUnloadedRadius;
                 wheelEffectiveRadius = wheelUnloadedRadius;
+            }
+
+            if (hub.tireSquealClip != null)
+            {
+                UpdateTireSqueal();
             }
 
             if (!isPowered && isGrounded)
@@ -272,37 +280,51 @@ namespace VehicleDynamics
         // Calculate longitudinal slip / slip ratio κ
         private float CalculateLongitudinalSlip()
         {
-            // wheelVelocity in world space -> local wheel coordinates
+            float slipEPS = 0.01f;
             Vector3 localWheelVelocity = transform.InverseTransformDirection(wheelVelocity);
-
             float wheelLongitudalVelocity = localWheelVelocity.z;
 
-            if (Mathf.Abs(wheelLongitudalVelocity) < Mathf.Epsilon)
+            if (Mathf.Abs(wheelLongitudalVelocity) < slipEPS)
             {
                 return 0f;
             }
-            if (Mathf.Abs(wheelLongitudalVelocity) < 10f)
-            {
-                float value = (wheelAngularVelocity * wheelEffectiveRadius - wheelLongitudalVelocity) / 10f;
-                return Mathf.Clamp(value, -4f, 4f);
-            }
-            float value2 = (wheelAngularVelocity * wheelEffectiveRadius - wheelLongitudalVelocity) / Mathf.Abs(wheelLongitudalVelocity);
-            return Mathf.Clamp(value2, -4f, 4f);
+
+            float vel = Mathf.Abs(wheelLongitudalVelocity);
+
+            // Reduce sensitivity at low speeds
+            if (vel < 10f) vel = 10f;
+
+            float slipRatio = (wheelAngularVelocity * wheelEffectiveRadius - wheelLongitudalVelocity) / vel;
+
+            slipRatio = Mathf.Clamp(slipRatio, -5f, 5f);
+            return slipRatio;
         }
 
         // Calculate slip angle α
         private float CalculateSlipAngle()
         {
+            
+            float slipEPS = 0.01f;
             Vector3 localWheelVelocity = transform.InverseTransformDirection(wheelVelocity);
 
-            if (localWheelVelocity.sqrMagnitude < Mathf.Epsilon)
+            if (localWheelVelocity.sqrMagnitude < slipEPS * slipEPS)
             {
                 return 0f;
             }
-            float x = localWheelVelocity.normalized.x;
-            Mathf.Clamp(x, -1f, 1f);
-            float num = Mathf.Clamp01(localWheelVelocity.magnitude / 1f);
-            return Mathf.Asin(x) * num;
+
+            float forwardVel = Mathf.Abs(localWheelVelocity.z);
+            float lateralVel = localWheelVelocity.x;
+            float yawRate = vehicleBody.angularVelocity.y;
+            // Wong method
+            float denominator = forwardVel + hub.parentSuspension.GetTrackWidth() * Mathf.Abs(yawRate) + Mathf.Epsilon;
+            if (Mathf.Abs(denominator) < slipEPS)
+            {
+                return 0f;
+            }
+
+            // Calculate slip angle
+            float slipAngle = (hub.parentSuspension.GetWheelBase() * yawRate + lateralVel) / denominator;
+            return Mathf.Asin(Mathf.Clamp(slipAngle, -1f, 1f)); // Clamp to valid range for Asin
         }
         // Calculate turn slip
         private float CalculateTurnSlip() // gamma = -(derivative of steer angle / V)
@@ -313,6 +335,10 @@ namespace VehicleDynamics
             float steerAngle = transform.localEulerAngles.y;
             float steerRate = steerAngle / Time.fixedDeltaTime;
             return -steerRate / wheelLongitudinalVelocity;
+        }
+        public float GetAlignmentTorque()
+        {
+            return alignmentTorque;
         }
         public void ApplyTorque(float torque)
         {
@@ -361,9 +387,17 @@ namespace VehicleDynamics
         {
             return normalLoad * frictionCoefficient.x * wheelEffectiveRadius;
         }
+        public Vector3 GetContactForce()
+        {
+            if (isGrounded)
+            {
+                return normalLoad * -transform.up; // Approximation of vertical force
+            }
+            return Vector3.zero;
+        }
         private void DrawTireRay(Ray ray)
         {
-            float normalizedForce = Mathf.Clamp01(wheelStiffnessForce / hub.parentSuspension.springConstant * 2);
+            float normalizedForce = Mathf.Clamp01(wheelStiffnessForce / hub.parentSuspension.springStiffness * 2);
             Color rayColor = Color.Lerp(Color.green, Color.red, normalizedForce);
             rayColor.a = 0.5f;
             Debug.DrawRay(ray.origin, ray.direction * wheelUnloadedRadius, rayColor);

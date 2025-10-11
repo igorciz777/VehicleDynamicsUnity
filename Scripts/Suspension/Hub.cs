@@ -6,7 +6,7 @@ using UnityEngine;
 namespace VehicleDynamics
 {
     [RequireComponent(typeof(Rigidbody))]
-    public class WheelHub : MonoBehaviour
+    public class Hub : MonoBehaviour
     {
         [Header("Wheel Parameters")]
         public float wheelUnloadedRadius = 0.3f;
@@ -34,7 +34,7 @@ namespace VehicleDynamics
         public GameObject visualWheel;
         [HideInInspector] public Rigidbody vehicleBody;
         [HideInInspector] public Rigidbody hubBody;
-        public KinematicSuspension parentSuspension;
+        public Suspension parentSuspension;
         public Wheel wheel;
 
         [Header("Mounts & Dummies")]
@@ -50,15 +50,15 @@ namespace VehicleDynamics
         [Header("Tire Squeal Audio")]
         public AudioClip tireSquealClip;
         [HideInInspector] public AudioSource slipRatioSquealSource, slipAngleSquealSource;
-        public float slipRatioThreshold = 0.1f;
+        public float slipRatioThreshold = 0.3f;
         public float slipAngleThreshold = 5f;
-        public float maxSquealVolume = 1.0f;
+        public float maxSquealVolume = 0.5f;
         public float minSquealPitch = 0.6f;
         public float maxSquealPitch = 1.3f;
 
         void Awake()
         {
-            parentSuspension = GetComponentInParent<KinematicSuspension>();
+            parentSuspension = GetComponentInParent<Suspension>();
             vehicleBody = parentSuspension.GetComponentInParent<Rigidbody>();
             hubBody = GetComponent<Rigidbody>();
 
@@ -139,17 +139,6 @@ namespace VehicleDynamics
         {
             wheelCenter = transform.position + transform.right * (rightSided ? parentSuspension.hubSpacing : -parentSuspension.hubSpacing);
 
-            if (rightSided)
-            {
-                wheelRate = parentSuspension.rightWheelRate;
-                wheelDamping = parentSuspension.rightWheelDampingRate;
-            }
-            else
-            {
-                wheelRate = parentSuspension.leftWheelRate;
-                wheelDamping = parentSuspension.leftWheelDampingRate;
-            }
-
             // Calculate camber relative to vehicle body
             Vector3 wheelUp = transform.up;
             Vector3 bodyUp = vehicleBody.transform.up;
@@ -164,9 +153,8 @@ namespace VehicleDynamics
 
             if (dummyHub != null)
             {
-                dummyHub.transform.position = transform.position;
                 // dummyHub.transform.localEulerAngles = new Vector3(0f, steeringAngle + (rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment), rightSided ? -parentSuspension.camberAdjustment : parentSuspension.camberAdjustment);
-                dummyHub.transform.rotation = transform.rotation;
+                dummyHub.transform.SetPositionAndRotation(transform.position, transform.rotation);
                 dummyHub.transform.localEulerAngles += new Vector3(0f, steeringAngle + (rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment), rightSided ? -parentSuspension.camberAdjustment : parentSuspension.camberAdjustment);
             }
             if (visualWheel != null)
@@ -179,9 +167,9 @@ namespace VehicleDynamics
             // Camber adjustment
             camberAngle += parentSuspension.camberAdjustment;
             // Toe adjustment
-            // toeAngle += rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment;
+            toeAngle += rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment;
             // Hard set toe to avoid car pulling to one side
-            toeAngle = rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment;
+            // toeAngle = rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment;
 
             // Rotate dummy wheel to match steering angle and toe
             // Camber angle is handled by tire model
@@ -206,7 +194,7 @@ namespace VehicleDynamics
         void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.TransformPoint(wheelCenter), wheelUnloadedRadius);
+            Gizmos.DrawWireSphere(transform.position, wheelUnloadedRadius);
         }
     }
 }
