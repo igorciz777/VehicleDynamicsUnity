@@ -161,9 +161,6 @@ namespace VehicleDynamics
                 leftLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, leftLowerWishbone, leftLowerWishboneChassisMount.position, Vector3.right, 50f);
                 leftLowerWishboneBall = CustomJoints.CreateSphereJoint(leftLowerWishbone, leftWheelHubMount.gameObject, leftLowerWishboneHubMount.position);
 
-                // Lock toe
-                leftLowerWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
-
                 // Right side joints
                 rightStrut = new Strut(
                     vehicleBody,
@@ -190,9 +187,6 @@ namespace VehicleDynamics
                 rightLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, rightLowerWishbone, rightLowerWishboneChassisMount.position, Vector3.right, 50f);
                 rightLowerWishboneBall = CustomJoints.CreateSphereJoint(rightLowerWishbone, rightWheelHubMount.gameObject, rightLowerWishboneHubMount.position);
 
-                // Lock toe
-                rightLowerWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
-
                 // Set axis to be relative to the spring
                 leftLowerWishboneHinge.axis = vehicleBody.transform.InverseTransformDirection(leftLowerWishboneChassisMount.position - leftSpringHubMount.position).normalized;
                 rightLowerWishboneHinge.axis = vehicleBody.transform.InverseTransformDirection(rightLowerWishboneChassisMount.position - rightSpringHubMount.position).normalized;
@@ -207,9 +201,6 @@ namespace VehicleDynamics
                     leftUpperWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, leftUpperWishbone, leftUpperWishboneChassisMount.position, Vector3.right);
                     leftUpperWishboneBall = CustomJoints.CreateSphereJoint(leftUpperWishbone, leftWheelHubMount.gameObject, leftUpperWishboneHubMount.position);
 
-                    // Lock toe
-                    leftUpperWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
-
                     // Right upper wishbone
                     rightUpperWishbone = new GameObject("R_UPPER_WB");
                     rightUpperWishbone.transform.SetParent(transform);
@@ -218,9 +209,6 @@ namespace VehicleDynamics
                     rightUpperWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, rightUpperWishbone, rightUpperWishboneChassisMount.position, Vector3.right);
                     rightUpperWishboneBall = CustomJoints.CreateSphereJoint(rightUpperWishbone, rightWheelHubMount.gameObject, rightUpperWishboneHubMount.position);
 
-                    // Lock toe
-                    rightUpperWishboneBall.angularYMotion = ConfigurableJointMotion.Locked;
-
                     // Set axis to be relative to the spring
                     leftUpperWishboneHinge.axis = vehicleBody.transform.InverseTransformDirection(leftUpperWishboneChassisMount.position - leftSpringHubMount.position).normalized;
                     rightUpperWishboneHinge.axis = vehicleBody.transform.InverseTransformDirection(rightUpperWishboneChassisMount.position - rightSpringHubMount.position).normalized;
@@ -228,6 +216,7 @@ namespace VehicleDynamics
             }
             else // Leaf Spring Suspension
             {
+                // TODO: needs fixing again
                 axleObject = new GameObject("AXLE");
                 axleObject.transform.SetParent(transform);
                 axleObject.transform.position = (leftWheelHubMount.position + rightWheelHubMount.position) * 0.5f;
@@ -283,12 +272,12 @@ namespace VehicleDynamics
             float COMzAxis = vehicleBody.transform.InverseTransformPoint(vehicleBody.worldCenterOfMass).z;
             wheelBase = Mathf.Abs(COMzAxis - vehicleBody.transform.InverseTransformPoint(leftWheelHubMount.position).z);
         }
-        void FixedUpdate()
+        public void Step(float dt)
         {
             leftWheelHub.UpdateSteering(steerable ? steeringInput : 0f);
             rightWheelHub.UpdateSteering(steerable ? steeringInput : 0f);
-            leftWheelHub.Step();
-            rightWheelHub.Step();
+            leftWheelHub.Step(dt);
+            rightWheelHub.Step(dt);
 
             // Update strut params (debug)
             leftStrut.SetSpringParameters(springStiffness, springRestLength, bumpStopLength, bumpStopStiffness, bumpStopBumpDamping, bumpStopReboundDamping);
@@ -322,6 +311,13 @@ namespace VehicleDynamics
 
                 vehicleBody.AddForceAtPosition(vehicleBody.transform.up * antirollForce, leftHubPos);
                 vehicleBody.AddForceAtPosition(vehicleBody.transform.up * -antirollForce, rightHubPos);
+            }
+
+            // Joint steering test
+            if (steerable)
+            {
+                leftStrut.GetJoint().targetRotation = Quaternion.Euler(-leftWheelHub.steeringAngle, 0f, 0f);
+                rightStrut.GetJoint().targetRotation = Quaternion.Euler(-rightWheelHub.steeringAngle, 0f, 0f);
             }
         }
         public void SetBrakeInput(float brakeInput)

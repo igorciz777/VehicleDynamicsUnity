@@ -167,9 +167,9 @@ namespace VehicleDynamics
 
             joint.targetPosition = new(springLength, 0, 0);
 
-            joint.angularXMotion = ConfigurableJointMotion.Locked;
-            joint.angularYMotion = ConfigurableJointMotion.Free;
-            joint.angularZMotion = ConfigurableJointMotion.Free;
+            joint.angularXMotion = ConfigurableJointMotion.Free;
+            joint.angularYMotion = ConfigurableJointMotion.Locked;
+            joint.angularZMotion = ConfigurableJointMotion.Locked;
 
 
             // Drive angular YZ to prevent excessive camber and toe
@@ -181,77 +181,6 @@ namespace VehicleDynamics
             };
             joint.angularXDrive = angularDrive;
             joint.angularYZDrive = angularDrive;
-
-            Vector3 chassisUp = bodyA.transform.up;
-            Vector3 chassisFwd = bodyA.transform.forward;
-
-            // Project onto plane perpendicular to chassis forward (ignore caster)
-            Vector3 upAxis = (chassisAnchor - hubAnchor).normalized;
-            Vector3 leftStrutProj = Vector3.ProjectOnPlane(upAxis, chassisFwd).normalized;
-            Vector3 upProj = Vector3.ProjectOnPlane(chassisUp, chassisFwd).normalized;
-
-            float angle = 360f - Vector3.SignedAngle(upProj, leftStrutProj, chassisFwd);
-
-            joint.targetRotation =
-                Quaternion.AngleAxis(angle, Vector3.forward);
-
-            return joint;
-        }
-        public static ConfigurableJoint CreateLeafSpringJoint(GameObject bodyA, GameObject bodyB, Vector3 chassisAnchor, Vector3 hubAnchor, float spring, float damper, float springLength)
-        {
-            var joint = bodyA.AddComponent<ConfigurableJoint>();
-            joint.connectedBody = bodyB.GetComponent<Rigidbody>();
-            joint.anchor = bodyA.transform.InverseTransformPoint(chassisAnchor);
-            joint.autoConfigureConnectedAnchor = false;
-            joint.connectedAnchor = bodyB.transform.InverseTransformPoint(hubAnchor);
-
-            joint.xMotion = ConfigurableJointMotion.Free;
-            joint.yMotion = ConfigurableJointMotion.Limited;
-            joint.zMotion = ConfigurableJointMotion.Locked;
-
-            // Allow tiny side flex
-            SoftJointLimit lateralLimit = new SoftJointLimit { limit = 0.02f };
-            joint.linearLimit = lateralLimit;
-
-            SoftJointLimitSpring limitSpring = new SoftJointLimitSpring { spring = 0, damper = 0 };
-            joint.linearLimitSpring = limitSpring;
-
-            JointDrive drive = new JointDrive
-            {
-                positionSpring = spring,
-                positionDamper = damper,
-                maximumForce = Mathf.Infinity
-            };
-
-            joint.xDrive = drive;
-            joint.yDrive = drive;
-            joint.zDrive = drive;
-
-            joint.configuredInWorldSpace = false;
-
-            // Set the axis of the spring joint based on the direction between chassis and hub anchors
-            Vector3 springAxis = (hubAnchor - chassisAnchor).normalized;
-            joint.axis = bodyA.transform.InverseTransformDirection(springAxis);
-
-            // Set secondary axis
-            joint.secondaryAxis = Vector3.Cross(joint.axis, Vector3.up).normalized;
-
-            joint.targetPosition = new(springLength, 0, 0);
-
-            joint.angularXMotion = ConfigurableJointMotion.Locked;
-            joint.angularYMotion = ConfigurableJointMotion.Free;
-            joint.angularZMotion = ConfigurableJointMotion.Free;
-
-
-            // Drive angular YZ to prevent excessive camber and toe
-            // JointDrive angularDrive = new JointDrive
-            // {
-            //     positionSpring = 10000f,
-            //     positionDamper = 10f,
-            //     maximumForce = Mathf.Infinity
-            // };
-            // joint.angularXDrive = angularDrive;
-            // joint.angularYZDrive = angularDrive;
 
             Vector3 chassisUp = bodyA.transform.up;
             Vector3 chassisFwd = bodyA.transform.forward;

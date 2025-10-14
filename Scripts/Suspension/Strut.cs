@@ -86,6 +86,8 @@ namespace VehicleDynamics
             springChassisAnchor = strutJoint.transform.TransformPoint(strutJoint.anchor);
             springHubAnchor = strutJoint.connectedBody.transform.TransformPoint(strutJoint.connectedAnchor);
 
+            springDirection = -(springHubAnchor - springChassisAnchor).normalized;
+
             Vector3 strutVelocity = hubBody.GetPointVelocity(springHubAnchor) - chassisBody.GetPointVelocity(springChassisAnchor);
             float suspensionVelocity = Vector3.Dot(strutVelocity, springDirection);
 
@@ -153,6 +155,10 @@ namespace VehicleDynamics
         public float GetCompression()
         {
             return compression;
+        }
+        public ConfigurableJoint GetJoint()
+        {
+            return strutJoint;
         }
         // Setters
         public void SetSpringParameters(float newSpringConstant, float newSpringRestLength, float newBumpStopLength, float newBumpStopStiffness, float newBumpStopBumpDamping, float newBumpStopReboundDamping)

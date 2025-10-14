@@ -52,7 +52,7 @@ namespace VehicleDynamics
         private float alignmentTorque = 0f;
 
         // Add a cap for the maximum vertical force
-        private const float maxVerticalForce = 200000f;
+        private const float maxVerticalForce = 600000f;
 
         public Tire tireModel;
         private TireInput tireInput;
@@ -85,7 +85,13 @@ namespace VehicleDynamics
                 mu = frictionCoefficient
             };
         }
-        public void Step()
+        public void ContactStep(float dt)
+        {}
+        public void DrivetrainStep(float dt, float driveTorque, float brakeTorque)
+        { }
+        public void FrictionStep(float dt)
+        { }
+        public void Step(float dt)
         {
             Vector3 wheelCenter = hub.wheelCenter;
 
@@ -140,20 +146,15 @@ namespace VehicleDynamics
             if (isGrounded)
             {
                 hitPoint = averageHitPoint;
-                // Contact patch velocity relative to the road surface
-                contactPatchVelocity = wheelVelocity - wheelAngularVelocity * wheelLoadedRadius * transform.forward;
 
-                // Hookes law
-                // This keeps wheels above ground, the suspension is handled by spring joints
+                // Tire vertical force
                 currTirePenDistance = rayLength - averageDistance;
-
                 tirePenetrationVelocity = Vector3.Dot(hubBody.GetPointVelocity(averageHitPoint), averageHitNormal);
 
-                // TODO: make the constant a parameter that makes sense, pressure?
-                wheelStiffnessForce = maxVerticalForce * currTirePenDistance;
-                wheelDampingForce = -tirePenetrationVelocity * hub.radialTireStiffness;
+                wheelStiffnessForce = hub.tirePressure * currTirePenDistance;
+                wheelDampingForce = -tirePenetrationVelocity * hub.tireStiffness;
 
-                // Sum vertical force and clamp to max
+                // Clamp vertical force to prevent instability
                 float verticalForce = wheelStiffnessForce + wheelDampingForce;
                 verticalForce = Mathf.Clamp(verticalForce, -maxVerticalForce, maxVerticalForce);
 
@@ -208,9 +209,9 @@ namespace VehicleDynamics
                 float rollingResistanceTorque = rollingResistanceMoment * Mathf.Sign(wheelAngularVelocity);
                 float rollingResistanceDeceleration = rollingResistanceTorque / wheelInertia;
 
-                if (Mathf.Abs(wheelAngularVelocity) >= Mathf.Abs(rollingResistanceDeceleration * Time.fixedDeltaTime))
+                if (Mathf.Abs(wheelAngularVelocity) >= Mathf.Abs(rollingResistanceDeceleration * dt))
                 {
-                    wheelAngularVelocity -= rollingResistanceDeceleration * Time.fixedDeltaTime;
+                    wheelAngularVelocity -= rollingResistanceDeceleration * dt;
                 }
                 else
                 {
@@ -223,7 +224,7 @@ namespace VehicleDynamics
                 // Apply reaction torque from tire force to wheel angular velocity
                 float tireTorque = -Fy * wheelEffectiveRadius; // Negative: tire force resists wheel spin
                 wheelAngularAcceleration = tireTorque / wheelInertia;
-                wheelAngularVelocity += wheelAngularAcceleration * Time.fixedDeltaTime;
+                wheelAngularVelocity += wheelAngularAcceleration * dt;
 
 
                 // Draw tire forces
@@ -263,7 +264,7 @@ namespace VehicleDynamics
                 // Update wheel angular velocity based wheel torque
 
                 wheelAngularAcceleration = wheelTorque / wheelInertia;
-                wheelAngularVelocity += wheelAngularAcceleration * Time.fixedDeltaTime;
+                wheelAngularVelocity += wheelAngularAcceleration * dt;
                 wheelTorque = 0f; // Reset torque after applying
                                   // Prevent NaN
                 if (float.IsNaN(wheelAngularVelocity) || float.IsInfinity(wheelAngularVelocity))
@@ -325,16 +326,6 @@ namespace VehicleDynamics
             // Calculate slip angle
             float slipAngle = (hub.parentSuspension.GetWheelBase() * yawRate + lateralVel) / denominator;
             return Mathf.Asin(Mathf.Clamp(slipAngle, -1f, 1f)); // Clamp to valid range for Asin
-        }
-        // Calculate turn slip
-        private float CalculateTurnSlip() // gamma = -(derivative of steer angle / V)
-        {
-            // Steer angle - this transform rotation
-            float wheelLongitudinalVelocity = Vector3.Dot(wheelVelocity, transform.forward);
-            if (Mathf.Abs(wheelLongitudinalVelocity) < float.Epsilon) return 0f;
-            float steerAngle = transform.localEulerAngles.y;
-            float steerRate = steerAngle / Time.fixedDeltaTime;
-            return -steerRate / wheelLongitudinalVelocity;
         }
         public float GetAlignmentTorque()
         {

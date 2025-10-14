@@ -13,9 +13,11 @@ namespace VehicleDynamics
         public float wheelWidth = 0.2f;
         public float wheelMass = 10f;
         public float wheelRollingResistance = 0.25f;
-        public float tireMass = 8f; // kg
-        public float radialTireStiffness = 200f; // N/m
-        public float radialDampingRatio = 1f; // N·s/m
+        public float tirePressure = 220000f; // Pa / N/m^2
+        public float tirePressurePSI = 32f; // PSI
+        public float tirePressureBar = 2.2f; // Bar
+
+        public float tireStiffness = 200f; // N/m
         [Header("Brake Parameters")]
         public float maxBrakeTorque = 1500f; // Nm
 
@@ -99,16 +101,17 @@ namespace VehicleDynamics
                 springHubMount = parentSuspension.leftSpringHubMount;
             }
 
-            // Set visual hub and wheel parent to dummy hub
-            if (visualWheel != null && dummyHub != null)
+            // Set visual wheel parent to dummy wheel
+            if (visualWheel != null)
             {
-                visualWheel.transform.SetParent(dummyHub.transform);
+                visualWheel.transform.SetParent(dummyWheel.transform);
                 visualWheel.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             }
-            if (visualHub != null && dummyHub != null)
+            // Set visual hub parent to dummy hub
+            if (visualHub != null)
             {
                 visualHub.transform.SetParent(dummyHub.transform);
-                visualHub.transform.position = Vector3.zero;
+                visualHub.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             }
 
             // Setup tire squeal audio sources
@@ -135,53 +138,45 @@ namespace VehicleDynamics
                 slipAngleSquealSource.Play();
             }
         }
-        public void Step()
+        public void Step(float dt)
         {
             wheelCenter = transform.position + transform.right * (rightSided ? parentSuspension.hubSpacing : -parentSuspension.hubSpacing);
 
-            // Calculate camber relative to vehicle body
-            Vector3 wheelUp = transform.up;
-            Vector3 bodyUp = vehicleBody.transform.up;
-            Vector3 bodyRight = vehicleBody.transform.right;
-            camberAngle = Vector3.SignedAngle(wheelUp, bodyUp, bodyRight);
-
-            // Calculate toe relative to vehicle body
-            Vector3 wheelForward = transform.forward;
-            Vector3 bodyForward = vehicleBody.transform.forward;
-            Vector3 bodyUpAxis = vehicleBody.transform.up;
-            toeAngle = Vector3.SignedAngle(wheelForward, bodyForward, bodyUpAxis);
+            tirePressurePSI = tirePressure / 6894.76f;
+            tirePressureBar = tirePressure / 100000f;
 
             if (dummyHub != null)
             {
-                // dummyHub.transform.localEulerAngles = new Vector3(0f, steeringAngle + (rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment), rightSided ? -parentSuspension.camberAdjustment : parentSuspension.camberAdjustment);
-                dummyHub.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                dummyHub.transform.localEulerAngles += new Vector3(0f, steeringAngle + (rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment), rightSided ? -parentSuspension.camberAdjustment : parentSuspension.camberAdjustment);
+                dummyHub.transform.position = transform.position;
+                dummyHub.transform.localEulerAngles = new Vector3(0f, transform.localEulerAngles.y, 0f);
             }
             if (visualWheel != null)
             {
                 visualWheel.transform.position = wheelCenter;
-                // Rotate wheel based on angular velocity
-                visualWheel.transform.Rotate(Vector3.right, wheel.wheelAngularVelocity * Time.fixedDeltaTime * Mathf.Rad2Deg, Space.Self);
+                visualWheel.transform.Rotate(Vector3.right, wheel.wheelAngularVelocity * dt * Mathf.Rad2Deg, Space.Self);
             }
+
+            // Calculate camber relative to dummyHub
+            Vector3 dummyHubRight = dummyHub.transform.right;
+            Vector3 wheelAxis = transform.right;
+            camberAngle = Vector3.SignedAngle(dummyHubRight, wheelAxis, transform.forward);
+            if(rightSided) camberAngle = -camberAngle;
 
             // Camber adjustment
             camberAngle += parentSuspension.camberAdjustment;
             // Toe adjustment
-            toeAngle += rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment;
-            // Hard set toe to avoid car pulling to one side
-            // toeAngle = rightSided ? -parentSuspension.toeAdjustment : parentSuspension.toeAdjustment;
+            toeAngle = rightSided ? parentSuspension.toeAdjustment : -parentSuspension.toeAdjustment;
 
-            // Rotate dummy wheel to match steering angle and toe
-            // Camber angle is handled by tire model
-            dummyWheel.transform.localEulerAngles = new Vector3(0f, steeringAngle + toeAngle, rightSided ? -camberAngle : camberAngle);
+            // Rotate dummy wheel to match steering, toe and camber angles
             dummyWheel.transform.position = wheelCenter;
+            dummyWheel.transform.localEulerAngles = new Vector3(0f, transform.localEulerAngles.y, rightSided ? -camberAngle : camberAngle);
 
-            wheel.Step();
+            wheel.Step(dt);
         }
         public void UpdateSteering(float steerInput)
         {
             float ackermannOffset = parentSuspension.maxSteeringAngle * Mathf.Abs(steerInput) * parentSuspension.ackermanPercentage / 2f * Mathf.Sign(transform.localPosition.x);
-            steeringAngle = parentSuspension.maxSteeringAngle * steerInput + ackermannOffset;
+            steeringAngle = parentSuspension.maxSteeringAngle * steerInput + ackermannOffset + toeAngle;
         }
         public void ApplyDriveTorque(float driveTorque)
         {
