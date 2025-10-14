@@ -102,24 +102,18 @@ namespace VehicleDynamics
 
             if (mouseInput)
             {
-                steeringAxis = (Input.mousePosition.x / Screen.width - 0.5f) * 2f; // Normalize to [-1, 1]
-                throttleAxis = Input.GetMouseButton(0) ? 1f : 0f; // Left click for throttle
-                brakeAxis = Input.GetMouseButton(1) ? 1f : 0f;    // Right click for brake
-                clutchAxis = Input.GetKey(KeyCode.LeftShift) ? 1f : 0f;
-                handbrakeButton = Input.GetKey(KeyCode.Space);
-                shiftUpButton = Input.GetKeyDown(KeyCode.E);
-                shiftDownButton = Input.GetKeyDown(KeyCode.Q);
+                steeringAxis = (steeringAxis / Screen.width - 0.5f) * 2f; // Normalize to [-1, 1]
             }
 
             // Gear shifting
 
             if (shiftDownButton)
             {
-                vehicleModel.drivetrain.ShiftDown();
+                vehicleModel.drivetrain.transmission.ShiftDown();
             }
             if (shiftUpButton)
             {
-                vehicleModel.drivetrain.ShiftUp();
+                vehicleModel.drivetrain.transmission.ShiftUp();
             }
 
 

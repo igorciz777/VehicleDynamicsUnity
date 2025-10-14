@@ -78,10 +78,12 @@ namespace VehicleDynamics
         }
         void FixedUpdate()
         {
+            float dt = Time.fixedDeltaTime;
             if (drivetrain != null)
             {
                 drivetrain.throttleInput = throttleInput;
                 drivetrain.clutchInput = clutchInput;
+                drivetrain.Step(dt);
             }
 
             float steeringWheelInput = Mathf.Clamp(steeringInput * (userWheelMaxAngle / steeringWheelMaxAngle), -1f, 1f);
@@ -95,6 +97,8 @@ namespace VehicleDynamics
                     // Apply braking torque
                     suspension.SetBrakeInput(brakeInput);
                     alignmentTorque = suspension.GetAlignmentTorque();
+
+                    suspension.Step(dt);
                 }
             }
 
@@ -110,11 +114,11 @@ namespace VehicleDynamics
 
             // Update displays
             if (rpmDisplay != null)
-                rpmDisplay.text = $"RPM: {drivetrain.engineRpm:0}";
+                rpmDisplay.text = $"RPM: {drivetrain.engine.engineRpm:0}";
             if (speedDisplay != null)
                 speedDisplay.text = $"Air Speed [km/h]: {drivetrain.vehicleBody.linearVelocity.magnitude * 3.6f:0}";
             if (gearDisplay != null)
-                gearDisplay.text = $"Gear: {drivetrain.currentGear} / {drivetrain.gearRatios.Length - 1}";
+                gearDisplay.text = $"Gear: {drivetrain.transmission.currentGear} / {drivetrain.transmission.gearRatios.Length - 1}";
         }
 
 
@@ -145,110 +149,5 @@ namespace VehicleDynamics
             }
             return totalLeverArm;
         }
-
-        // https://gist.github.com/Maesla/7b3cffbda7d0a5b02aa7166d3eed5def
-        // public static void DiagonalizeInertiaTensor(Matrix4x4 m, out Vector3 inertiaTensor, out Quaternion inertiaTensorRotation)
-        // {
-        //     float m11 = m[0, 0];
-        //     float m12 = m[0, 1];
-        //     float m13 = m[0, 2];
-        //     float m22 = m[1, 1];
-        //     float m23 = m[1, 2];
-        //     float m33 = m[2, 2];
-
-        //     const int maxSweeps = 32;
-        //     const float epsilon = 1e-10F;
-        //     float fabs(float x) { return Mathf.Abs(x); }
-        //     float sqrt(float x) { return Mathf.Sqrt(x); }
-
-        //     Matrix4x4 r = Matrix4x4.identity;
-        //     for (int a = 0; a < maxSweeps; a++)
-        //     {
-        //         // Exit if off.diagonal entries small enough
-        //         if ((fabs(m12) < epsilon) && (fabs(m13) < epsilon) && (fabs(m23) < epsilon))
-        //             break;
-
-        //         // Annihilate (1,2) entry.
-        //         if (m12 != 0.0F)
-        //         {
-        //             float u = (m22 - m11) * 0.5F / m12;
-        //             float u2 = u * u;
-        //             float u2p1 = u2 + 1.0F;
-        //             float t = (u2p1 != u2) ?
-        //             ((u < 0.0F) ? -1.0F : 1.0F) * (sqrt(u2p1) - fabs(u))
-        //             : 0.5F / u;
-        //             float c = 1.0F / sqrt(t * t + 1.0F);
-        //             float s = c * t;
-        //             m11 -= t * m12;
-        //             m22 += t * m12;
-        //             m12 = 0.0F;
-        //             float temp = c * m13 - s * m23;
-        //             m23 = s * m13 + c * m23;
-        //             m13 = temp;
-        //             for (int i = 0; i < 3; i++)
-        //             {
-        //                 float tempInner = c * r[i, 0] - s * r[i, 1];
-        //                 r[i, 1] = s * r[i, 0] + c * r[i, 1];
-        //                 r[i, 0] = tempInner;
-        //             }
-        //         }
-
-        //         // Annihilate (1,3) entry.
-        //         if (m13 != 0.0F)
-        //         {
-        //             float u = (m33 - m11) * 0.5F / m13;
-        //             float u2 = u * u;
-        //             float u2p1 = u2 + 1.0F;
-        //             float t = (u2p1 != u2) ?
-        //             ((u < 0.0F) ? -1.0F : 1.0F) * (sqrt(u2p1) - fabs(u))
-        //             : 0.5F / u;
-        //             float c = 1.0F / sqrt(t * t + 1.0F);
-        //             float s = c * t;
-        //             m11 -= t * m13;
-        //             m33 += t * m13;
-        //             m13 = 0.0F;
-        //             float temp = c * m12 - s * m23;
-        //             m23 = s * m12 + c * m23;
-        //             m12 = temp;
-        //             for (int i = 0; i < 3; i++)
-        //             {
-        //                 float tempInner = c * r[i, 0] - s * r[i, 2];
-        //                 r[i, 2] = s * r[i, 0] + c * r[i, 2];
-        //                 r[i, 0] = tempInner;
-        //             }
-        //         }
-
-        //         // Annihilate (2,3) entry.
-        //         if (m23 != 0.0F)
-        //         {
-        //             float u = (m33 - m22) * 0.5F / m23;
-        //             float u2 = u * u;
-        //             float u2p1 = u2 + 1.0F;
-        //             float t = (u2p1 != u2) ?
-        //             ((u < 0.0F) ? -1.0F : 1.0F) * (sqrt(u2p1) - fabs(u))
-        //             : 0.5F / u;
-        //             float c = 1.0F / sqrt(t * t + 1.0F);
-        //             float s = c * t;
-        //             m22 -= t * m23;
-        //             m33 += t * m23;
-        //             m23 = 0.0F;
-        //             float temp = c * m12 - s * m13;
-        //             m13 = s * m12 + c * m13;
-        //             m12 = temp;
-        //             for (int i = 0; i < 3; i++)
-        //             {
-        //                 float tempInner = c * r[i, 1] - s * r[i, 2];
-        //                 r[i, 2] = s * r[i, 1] + c * r[i, 2];
-        //                 r[i, 1] = tempInner;
-        //             }
-        //         }
-        //     }
-
-        //     inertiaTensor.x = m11;
-        //     inertiaTensor.y = m22;
-        //     inertiaTensor.z = m33;
-
-        //     inertiaTensorRotation = r.rotation;
-        // }
     }
 }
