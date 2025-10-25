@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
@@ -9,22 +10,18 @@ namespace VehicleDynamics
     public class Hub : MonoBehaviour
     {
         [Header("Wheel Parameters")]
-        public float wheelUnloadedRadius = 0.3f;
-        public float wheelWidth = 0.2f;
-        public float wheelMass = 10f;
-        public float wheelRollingResistance = 0.25f;
-        public float tirePressure = 220000f; // Pa / N/m^2
-        public float tirePressurePSI = 32f; // PSI
-        public float tirePressureBar = 2.2f; // Bar
-
-        public float tireStiffness = 200f; // N/m
-        [Header("Brake Parameters")]
-        public float maxBrakeTorque = 1500f; // Nm
+        public float wheelUnloadedRadius = 0.3f; // m
+        public float wheelWidth = 0.2f; // m
+        public float wheelMass = 15f; // kg
+        public float wheelRollingResistance = 0.25f; // Coefficient of rolling resistance
+        public float tireMass = 10f; // kg
+        public float tirePressure = 220000f; // Pa [N/m^2]
+        [Range(0.1f, 2.0f)]
+        public float tireDampingRatio = 1f; 
+        public float tireNominalLoad = 4000f; // N
 
         [Header("Suspension Runtime")]
         [HideInInspector] public bool rightSided = false;
-        [HideInInspector] public float wheelRate = 0f;
-        [HideInInspector] public float wheelDamping = 0f;
 
         [Header("Wheel Alignment")]
         public float steeringAngle = 0f;
@@ -36,14 +33,12 @@ namespace VehicleDynamics
         public GameObject visualWheel;
         [HideInInspector] public Rigidbody vehicleBody;
         [HideInInspector] public Rigidbody hubBody;
-        public Suspension parentSuspension;
-        public Wheel wheel;
+        private Suspension pS;
+        private Wheel wheel;
 
         [Header("Mounts & Dummies")]
         private GameObject dummyHub;
         private GameObject dummyWheel;
-        private Transform springChassisMount;
-        private Transform springHubMount;
 
         [Header("Wheel Center & Inertia")]
         public Vector3 wheelCenter = Vector3.zero;
@@ -60,12 +55,15 @@ namespace VehicleDynamics
 
         void Awake()
         {
-            parentSuspension = GetComponentInParent<Suspension>();
-            vehicleBody = parentSuspension.GetComponentInParent<Rigidbody>();
+            pS = GetComponentInParent<Suspension>();
+            vehicleBody = pS.GetComponentInParent<Rigidbody>();
             hubBody = GetComponent<Rigidbody>();
 
             // Set hub rigidbody mass from wheelMass
             hubBody.mass = wheelMass;
+
+            hubBody.linearDamping = 0f;
+            hubBody.angularDamping = 0f;
 
             // Check if right sided from vehicle body transform
             if (vehicleBody.transform.InverseTransformPoint(transform.position).x > 0f)
@@ -74,13 +72,13 @@ namespace VehicleDynamics
             }
 
             dummyHub = new GameObject("dummyHub");
-            dummyHub.transform.SetParent(parentSuspension.transform);
+            dummyHub.transform.SetParent(pS.transform);
             dummyWheel = new GameObject("dummyWheel");
-            dummyWheel.transform.SetParent(parentSuspension.transform);
+            dummyWheel.transform.SetParent(pS.transform);
             wheel = dummyWheel.AddComponent<Wheel>();
             wheel.hub = this;
 
-            wheelCenter = transform.position + transform.right * (rightSided ? parentSuspension.hubSpacing : -parentSuspension.hubSpacing);
+            wheelCenter = transform.position + transform.right * (rightSided ? pS.hubSpacing : -pS.hubSpacing);
             wheelInertia = 0.5f * wheelMass * wheelUnloadedRadius * wheelUnloadedRadius;
 
             CapsuleCollider col = gameObject.AddComponent<CapsuleCollider>();
@@ -90,17 +88,6 @@ namespace VehicleDynamics
         }
         void Start()
         {
-            if (rightSided)
-            {
-                springChassisMount = parentSuspension.rightSpringChassisMount;
-                springHubMount = parentSuspension.rightSpringHubMount;
-            }
-            else
-            {
-                springChassisMount = parentSuspension.leftSpringChassisMount;
-                springHubMount = parentSuspension.leftSpringHubMount;
-            }
-
             // Set visual wheel parent to dummy wheel
             if (visualWheel != null)
             {
@@ -140,10 +127,7 @@ namespace VehicleDynamics
         }
         public void Step(float dt)
         {
-            wheelCenter = transform.position + transform.right * (rightSided ? parentSuspension.hubSpacing : -parentSuspension.hubSpacing);
-
-            tirePressurePSI = tirePressure / 6894.76f;
-            tirePressureBar = tirePressure / 100000f;
+            wheelCenter = transform.position + transform.right * (rightSided ? pS.hubSpacing : -pS.hubSpacing);
 
             if (dummyHub != null)
             {
@@ -160,12 +144,12 @@ namespace VehicleDynamics
             Vector3 dummyHubRight = dummyHub.transform.right;
             Vector3 wheelAxis = transform.right;
             camberAngle = Vector3.SignedAngle(dummyHubRight, wheelAxis, transform.forward);
-            if(rightSided) camberAngle = -camberAngle;
+            if (rightSided) camberAngle = -camberAngle;
 
             // Camber adjustment
-            camberAngle += parentSuspension.camberAdjustment;
+            camberAngle += pS.camberAdjustment;
             // Toe adjustment
-            toeAngle = rightSided ? parentSuspension.toeAdjustment : -parentSuspension.toeAdjustment;
+            toeAngle = rightSided ? pS.toeAdjustment : -pS.toeAdjustment;
 
             // Rotate dummy wheel to match steering, toe and camber angles
             dummyWheel.transform.position = wheelCenter;
@@ -173,10 +157,14 @@ namespace VehicleDynamics
 
             wheel.Step(dt);
         }
+        public void PostDrivetrainStep(float dt)
+        {
+            wheel.PostDrivetrainStep(dt);
+        }
         public void UpdateSteering(float steerInput)
         {
-            float ackermannOffset = parentSuspension.maxSteeringAngle * Mathf.Abs(steerInput) * parentSuspension.ackermanPercentage / 2f * Mathf.Sign(transform.localPosition.x);
-            steeringAngle = parentSuspension.maxSteeringAngle * steerInput + ackermannOffset + toeAngle;
+            float ackermannOffset = pS.maxSteeringAngle * Mathf.Abs(steerInput) * pS.ackermanPercentage / 2f * Mathf.Sign(transform.localPosition.x);
+            steeringAngle = pS.maxSteeringAngle * steerInput + ackermannOffset + toeAngle;
         }
         public void ApplyDriveTorque(float driveTorque)
         {
@@ -184,12 +172,60 @@ namespace VehicleDynamics
         }
         public void ApplyBrakeTorque(float brakeTorque)
         {
-            wheel.ApplyBrake(brakeTorque);
+            wheel.ApplyBrakeTorque(brakeTorque);
+        }
+        public void ApplyBrakePressure(float brakePressure)
+        {
+            bool ABS = pS.vehicleModel.hasABS;
+            if (ABS)
+            {
+                float wheelSlip = wheel.slipRatio;
+                float slipOpt = pS.vehicleModel.absSlipOpt;
+                float slipTol = pS.vehicleModel.absSlipTol;
+                float pressureDropRate = pS.vehicleModel.absPressureDropRate;
+                float pressureRiseRate = pS.vehicleModel.absPressureRiseRate;
+
+                if (Mathf.Abs(wheelSlip - slipOpt) > slipTol && brakePressure > 0f)
+                {
+                    // Reduce brake pressure
+                    brakePressure -= pressureDropRate;
+                    brakePressure = Mathf.Max(brakePressure, 0f);
+                }
+                else
+                {
+                    // Increase brake pressure
+                    brakePressure += pressureRiseRate * Time.fixedDeltaTime;
+                    brakePressure = Mathf.Min(brakePressure, pS.brakePressure);
+                }
+            }
+            float brakeTorque = pS.brakePadCount * pS.brakeFrictionCoefficient * brakePressure * (pS.brakePistonArea * 0.1f) * pS.brakeRotorRadius;
+            wheel.ApplyBrakeTorque(brakeTorque);
         }
         void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, wheelUnloadedRadius);
+            CustomGizmos.DrawCircle(transform.position + 0.5f * wheelWidth * transform.right, transform.right, wheelUnloadedRadius, Color.yellow);
+            CustomGizmos.DrawCircle(transform.position - 0.5f * wheelWidth * transform.right, transform.right, wheelUnloadedRadius, Color.yellow);
+        }
+
+        // Getters
+        public Wheel GetWheel()
+        {
+            return wheel;
+        }
+
+        public Suspension GetSuspension()
+        {
+            return pS;
+        }
+
+        // Setters
+        public void SetTireParameters(float newTireMass, float newTirePressure, float newTireDampingRatio, float newTireNominalLoad)
+        {
+            tireMass = newTireMass;
+            tirePressure = newTirePressure;
+            tireDampingRatio = newTireDampingRatio;
+            tireNominalLoad = newTireNominalLoad;
         }
     }
 }

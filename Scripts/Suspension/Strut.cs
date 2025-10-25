@@ -22,6 +22,7 @@ namespace VehicleDynamics
         private Vector3 springChassisAnchor;
         private Vector3 springHubAnchor;
         private Vector3 springDirection;
+        private readonly float maxForce;
 
         private float compression;
 
@@ -42,7 +43,7 @@ namespace VehicleDynamics
             float fastReboundStiffness,
             float fastBumpThreshold,
             float fastReboundThreshold,
-            bool leafSpring = false
+            bool solidAxleSpring = false
             )
         {
             this.chassisBody = chassisBody;
@@ -63,6 +64,9 @@ namespace VehicleDynamics
             springDirection = -(hubMountPos - chassisMountPos).normalized;
             // springDirection = hubBody.transform.up;
 
+            // Max force
+            maxForce = chassisBody.mass * 9.81f;
+
             strutJoint = CustomJoints.CreateSpringJoint(
                 chassisBody.gameObject, hubBody.gameObject,
                 chassisMountPos, hubMountPos,
@@ -71,14 +75,14 @@ namespace VehicleDynamics
             // instead of using the built-in PhysX spring and damper
             // This allows for more control and customization of the suspension behavior,
             // e.g. more complex damper, non-linear (progressive) spring, etc.
-            if (leafSpring) LeafSpringSetup();
+            if (solidAxleSpring) SolidAxleSetup();
         }
 
-        public void LeafSpringSetup()
+        public void SolidAxleSetup()
         {
             strutJoint.yMotion = ConfigurableJointMotion.Locked;
             strutJoint.zMotion = ConfigurableJointMotion.Locked;
-            strutJoint.angularYZDrive = new JointDrive { positionSpring = springStiffness, positionDamper = bumpStiffness, maximumForce = Mathf.Infinity };
+            strutJoint.angularXMotion = ConfigurableJointMotion.Locked;
         }
 
         public void Step()
@@ -96,26 +100,11 @@ namespace VehicleDynamics
             compression = springDistance - springRestLength;
             float springForce = -compression * springStiffness;
 
-            // Bump stop force
-            if (Mathf.Abs(springDistance) < bumpStopLength)
-            {
-                Debug.Log("Bump stop engaged");
-                float bumpStopCompression = springDistance - bumpStopLength;
-                if (suspensionVelocity > 0f) // Bump
-                {
-                    springForce += -bumpStopCompression * bumpStopStiffness - suspensionVelocity * bumpStopBumpDamping;
-                }
-                else // Rebound
-                {
-                    springForce += -bumpStopCompression * bumpStopStiffness - suspensionVelocity * bumpStopReboundDamping;
-                }
-            }
-        
             // Damper force
             float damperForce;
             if (suspensionVelocity > 0f) // Bump
             {
-                if(suspensionVelocity > fastBumpThreshold)
+                if (suspensionVelocity > fastBumpThreshold)
                 {
                     damperForce = suspensionVelocity * fastBumpStiffness;
                 }
@@ -126,7 +115,7 @@ namespace VehicleDynamics
             }
             else // Rebound
             {
-                if(suspensionVelocity < -fastReboundThreshold)
+                if (suspensionVelocity < -fastReboundThreshold)
                 {
                     damperForce = suspensionVelocity * fastReboundStiffness;
                 }
@@ -136,8 +125,28 @@ namespace VehicleDynamics
                 }
             }
 
-            hubBody.AddForceAtPosition((-springForce - damperForce) * springDirection, hubBody.transform.position);
-            chassisBody.AddForceAtPosition((springForce + damperForce) * springDirection, hubBody.transform.position);
+            // Bump stop force
+            if (Mathf.Abs(springDistance) < bumpStopLength)
+            {
+                float bumpStopCompression = springDistance - bumpStopLength;
+                if (suspensionVelocity > 0f) // Bump
+                {
+                    springForce += -bumpStopCompression * bumpStopStiffness;
+                    damperForce += suspensionVelocity * bumpStopBumpDamping;
+                }
+                else // Rebound
+                {
+                    springForce += -bumpStopCompression * bumpStopStiffness;
+                    damperForce += suspensionVelocity * bumpStopReboundDamping;
+                }
+            }
+
+            // Clamp forces to maxForce
+            springForce = Mathf.Clamp(springForce, -maxForce, maxForce);
+            damperForce = Mathf.Clamp(damperForce, -maxForce, maxForce);
+            // Apply forces
+            hubBody.AddForceAtPosition((-springForce - damperForce) * springDirection, springHubAnchor, ForceMode.Force);
+            chassisBody.AddForceAtPosition((springForce + damperForce) * springDirection, springChassisAnchor, ForceMode.Force);
         }
         // Getters
         public Vector3 GetSpringChassisAnchor()
@@ -178,6 +187,10 @@ namespace VehicleDynamics
             fastReboundStiffness = newFastReboundStiffness;
             fastBumpThreshold = newFastBumpThreshold;
             fastReboundThreshold = newFastReboundThreshold;
+        }
+        public void SetSteeringAngle(float angleDegrees)
+        {
+            strutJoint.targetRotation = Quaternion.Euler(-angleDegrees, 0f, 0f);
         }
     }
 }

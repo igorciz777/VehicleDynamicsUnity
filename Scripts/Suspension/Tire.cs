@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -26,6 +24,7 @@ namespace VehicleDynamics
         public abstract float GetCombinedLateral();
         public abstract float GetCombinedAligningTorque();
         public abstract float GetRollingResistanceMoment();
+        public abstract float GetOverturningMoment();
         public Vector4 GetForcesAndTorque(ref TireInput input)
         {
             tr = input;
@@ -41,8 +40,8 @@ namespace VehicleDynamics
     {
         // Simplified Pacejka's Magic Formula
         public float B = 10f; // Stiffness factor
-        public float C_Long = 1.9f; // Longitudinal Shape factor
-        public float C_Lat = 1.3f;  // Lateral Shape factor
+        public float C_Long = 1.6f; // Longitudinal Shape factor
+        public float C_Lat = 1.35f;  // Lateral Shape factor
         public float D = 1f;   // Peak factor
         public float E = 0.97f; // Curvature factor
 
@@ -94,6 +93,11 @@ namespace VehicleDynamics
             float Crr = 0.015f; // Rolling resistance coefficient
             float My = Crr * tr.Fz * tr.r0;
             return My;
+        }
+        public override float GetOverturningMoment()
+        {
+            // No overturning moment in simplified model
+            return 0f;
         }
     }
     public class MagicFormula : Tire
@@ -323,6 +327,11 @@ namespace VehicleDynamics
         {
             float My = tr.r0 * (Svx + Kx * Shx);
             return My;
+        }
+        public override float GetOverturningMoment()
+        {
+            float Mx = Fy * tr.r0 * Mathf.Cos(tr.gam);
+            return Mx;
         }
     }
 }

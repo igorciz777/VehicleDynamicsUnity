@@ -10,12 +10,11 @@ namespace VehicleDynamics
         {
             MacPherson,
             DoubleWishbone,
-            LeafSpring
+            SolidAxle
         }
         [Header("General Settings")]
-        [SerializeField] private Rigidbody vehicleBody;
-        public bool steerable = false;
-        [Range(-1f, 1f)] public float steeringInput = 0f; // -1 (full left) to 1 (full right)
+        private Rigidbody vehicleBody;
+        public VehicleModel vehicleModel;
         [SerializeField] private GameObject leftVisualHub;
         [SerializeField] private GameObject rightVisualHub;
         [SerializeField] private GameObject leftVisualWheel;
@@ -30,12 +29,7 @@ namespace VehicleDynamics
         [SerializeField] private Transform rightLowerWishboneHubMount;
         [SerializeField] private Transform rightUpperWishboneChassisMount;
         [SerializeField] private Transform rightUpperWishboneHubMount;
-
-        [Header("Solid Axle Suspension Geometry")]
-        [SerializeField] private Transform leftFrontLeafChassisMount;
-        [SerializeField] private Transform leftRearLeafChassisMount;
-        [SerializeField] private Transform rightFrontLeafChassisMount;
-        [SerializeField] private Transform rightRearLeafChassisMount;
+        [SerializeField] private float wishboneMaxAngle = 45f;
 
         [Header("Spring and Damper Geometry")]
         public Transform leftSpringChassisMount;
@@ -61,15 +55,33 @@ namespace VehicleDynamics
         public float fastBumpThreshold = 0.3f; // m/s
         public float fastReboundThreshold = 0.3f; // m/s
 
+        [Header("Steering Parameters")]
+        public bool steerable = false;
+        [HideInInspector]public float steeringInput = 0f; // -1 (full left) to 1 (full right)
+        public float maxSteeringAngle = 45f;
+        [Range(-1f, 1f)]
+        public float ackermanPercentage = 1f;
+        public bool setAckermannFromGeometry = false;
+        [Tooltip("For calculating Ackermann from suspension geometry, assign the opposite suspension here.")]
+        public Suspension oppositeSuspension; // For Ackermann steering calculations
+        private float turningRadius = 6f;
+
         [Header("Wheel Parameters")]
         public float hubSpacing = 0.1f; // Distance between the hub and the wheel center
-        public float ackermanPercentage = 0.25f;
-        public float maxSteeringAngle = 45f;
         public float camberAdjustment = 0f;
         public float toeAdjustment = 0f;
+        [Header("Brake Parameters")]
+        public float brakePressure = 5000f; // kPa
+        public float handbrakePressure = 0f; // kPa
+        public float brakePadCount = 2f;
+        public float brakeFrictionCoefficient = 0.5f;
+        public float brakeRotorRadius = 0.15f; // m
+        public float brakePistonArea = 5f; // cm^2
+
         [Header("Anti-Roll Bar Settings")]
         public bool hasAntirollBar = false;
         public float antirollBarStiffness = 5000f;
+        [HideInInspector] public float antirollForce = 0f;
 
         // Independent Suspension joints
         private ConfigurableJoint leftLowerWishboneHinge;
@@ -84,8 +96,8 @@ namespace VehicleDynamics
         private ConfigurableJoint leftAxleJoint;
         private ConfigurableJoint rightAxleJoint;
         // Struts
-        private Strut leftStrut;
-        private Strut rightStrut;
+        [HideInInspector] public Strut leftStrut;
+        [HideInInspector] public Strut rightStrut;
 
         // New gameobjects for joints
         private GameObject leftLowerWishbone;
@@ -109,6 +121,7 @@ namespace VehicleDynamics
                 vehicleBody = GetComponentInParent<Rigidbody>();
                 Debug.Assert(vehicleBody != null, "Rigidbody component not found on parent VehicleModel GameObject.");
             }
+            vehicleModel = vehicleBody.GetComponent<VehicleModel>();
             // Setup hubs
             leftWheelHub = leftWheelHubMount.GetComponent<Hub>();
             rightWheelHub = rightWheelHubMount.GetComponent<Hub>();
@@ -133,7 +146,7 @@ namespace VehicleDynamics
         }
         void Start()
         {
-            if (suspensionType != SuspensionType.LeafSpring)
+            if (suspensionType != SuspensionType.SolidAxle)
             {
                 // Left side joints
                 leftStrut = new Strut(
@@ -158,7 +171,7 @@ namespace VehicleDynamics
                 leftLowerWishbone.transform.SetParent(transform);
                 leftLowerWishbone.transform.position = (leftLowerWishboneChassisMount.position + leftLowerWishboneHubMount.position) * 0.5f;
                 leftLowerWishbone.AddComponent<Rigidbody>().mass = 5f;
-                leftLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, leftLowerWishbone, leftLowerWishboneChassisMount.position, Vector3.right, 50f);
+                leftLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, leftLowerWishbone, leftLowerWishboneChassisMount.position, Vector3.right, wishboneMaxAngle);
                 leftLowerWishboneBall = CustomJoints.CreateSphereJoint(leftLowerWishbone, leftWheelHubMount.gameObject, leftLowerWishboneHubMount.position);
 
                 // Right side joints
@@ -184,7 +197,7 @@ namespace VehicleDynamics
                 rightLowerWishbone.transform.SetParent(transform);
                 rightLowerWishbone.transform.position = (rightLowerWishboneChassisMount.position + rightLowerWishboneHubMount.position) * 0.5f;
                 rightLowerWishbone.AddComponent<Rigidbody>().mass = 5f;
-                rightLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, rightLowerWishbone, rightLowerWishboneChassisMount.position, Vector3.right, 50f);
+                rightLowerWishboneHinge = CustomJoints.CreateRevoluteJoint(vehicleBody.gameObject, rightLowerWishbone, rightLowerWishboneChassisMount.position, Vector3.right, wishboneMaxAngle);
                 rightLowerWishboneBall = CustomJoints.CreateSphereJoint(rightLowerWishbone, rightWheelHubMount.gameObject, rightLowerWishboneHubMount.position);
 
                 // Set axis to be relative to the spring
@@ -214,14 +227,15 @@ namespace VehicleDynamics
                     rightUpperWishboneHinge.axis = vehicleBody.transform.InverseTransformDirection(rightUpperWishboneChassisMount.position - rightSpringHubMount.position).normalized;
                 }
             }
-            else // Leaf Spring Suspension
+            else // Solid Axle Suspension
             {
-                // TODO: needs fixing again
                 axleObject = new GameObject("AXLE");
                 axleObject.transform.SetParent(transform);
                 axleObject.transform.position = (leftWheelHubMount.position + rightWheelHubMount.position) * 0.5f;
                 Rigidbody axleBody = axleObject.AddComponent<Rigidbody>();
                 axleBody.mass = 20f;
+                axleBody.linearDamping = 0f;
+                axleBody.angularDamping = 0f;
                 leftAxleJoint = CustomJoints.CreateAxleJoint(leftWheelHubMount.gameObject, axleObject);
                 rightAxleJoint = CustomJoints.CreateAxleJoint(rightWheelHubMount.gameObject, axleObject);
                 // Left side joints
@@ -241,9 +255,9 @@ namespace VehicleDynamics
                     fastBumpStiffness,
                     fastReboundStiffness,
                     fastBumpThreshold,
-                    fastReboundThreshold
+                    fastReboundThreshold,
+                    true
                 );
-                // leftAxleJoint = CustomJoints.CreateAxleJoint(leftWheelHubMount.gameObject, rightWheelHubMount.gameObject);
                 // Right side joints
                 rightStrut = new Strut(
                     vehicleBody,
@@ -261,21 +275,19 @@ namespace VehicleDynamics
                     fastBumpStiffness,
                     fastReboundStiffness,
                     fastBumpThreshold,
-                    fastReboundThreshold
+                    fastReboundThreshold,
+                    true
                 );
-                // leftAxleJoint = CustomJoints.CreateAxleJoint(rightWheelHubMount.gameObject, leftWheelHubMount.gameObject);
             }
 
             // Calculate track width
-            trackWidth = Vector3.Distance(leftWheelHubMount.position, rightWheelHubMount.position);
+            trackWidth = Vector3.Distance(leftWheelHub.wheelCenter, rightWheelHub.wheelCenter);
             // Calculate wheelbase
             float COMzAxis = vehicleBody.transform.InverseTransformPoint(vehicleBody.worldCenterOfMass).z;
             wheelBase = Mathf.Abs(COMzAxis - vehicleBody.transform.InverseTransformPoint(leftWheelHubMount.position).z);
         }
         public void Step(float dt)
         {
-            leftWheelHub.UpdateSteering(steerable ? steeringInput : 0f);
-            rightWheelHub.UpdateSteering(steerable ? steeringInput : 0f);
             leftWheelHub.Step(dt);
             rightWheelHub.Step(dt);
 
@@ -300,32 +312,86 @@ namespace VehicleDynamics
                 float leftCompression = leftStrut.GetCompression();
                 float rightCompression = rightStrut.GetCompression();
 
-                float antirollForce = (leftCompression - rightCompression) * -antirollBarStiffness;
+                antirollForce = (leftCompression - rightCompression) * -antirollBarStiffness;
 
                 // Use hub center positions for force application points
-                Vector3 leftHubPos = leftWheelHub.hubBody.transform.position;
-                Vector3 rightHubPos = rightWheelHub.hubBody.transform.position;
+                // Vector3 leftHubPos = leftWheelHub.hubBody.transform.position;
+                // Vector3 rightHubPos = rightWheelHub.hubBody.transform.position;
 
-                leftWheelHub.hubBody.AddForceAtPosition(vehicleBody.transform.up * -antirollForce, leftHubPos);
-                rightWheelHub.hubBody.AddForceAtPosition(vehicleBody.transform.up * antirollForce, rightHubPos);
+                leftWheelHub.hubBody.AddForceAtPosition(vehicleBody.transform.up * -antirollForce, leftSpringHubMount.position);
+                rightWheelHub.hubBody.AddForceAtPosition(vehicleBody.transform.up * antirollForce, rightSpringHubMount.position);
 
-                vehicleBody.AddForceAtPosition(vehicleBody.transform.up * antirollForce, leftHubPos);
-                vehicleBody.AddForceAtPosition(vehicleBody.transform.up * -antirollForce, rightHubPos);
+                vehicleBody.AddForceAtPosition(vehicleBody.transform.up * antirollForce, leftSpringChassisMount.position);
+                vehicleBody.AddForceAtPosition(vehicleBody.transform.up * -antirollForce, rightSpringChassisMount.position);
             }
 
-            // Joint steering test
-            if (steerable)
+            // Ackermann steering
+            if (steerable && oppositeSuspension != null && setAckermannFromGeometry)
             {
-                leftStrut.GetJoint().targetRotation = Quaternion.Euler(-leftWheelHub.steeringAngle, 0f, 0f);
-                rightStrut.GetJoint().targetRotation = Quaternion.Euler(-rightWheelHub.steeringAngle, 0f, 0f);
+                float totalWheelBase = wheelBase + oppositeSuspension.wheelBase;
+                turningRadius = totalWheelBase / maxSteeringAngle * Mathf.Rad2Deg;
+                float inner = totalWheelBase / (turningRadius - trackWidth * 0.5f) * Mathf.Rad2Deg;
+                float outer = totalWheelBase / (turningRadius + trackWidth * 0.5f) * Mathf.Rad2Deg;
+                if (steeringInput > 0f) // Right
+                {
+                    leftWheelHub.steeringAngle = inner * steeringInput;
+                    rightWheelHub.steeringAngle = outer * steeringInput;
+                }
+                else if (steeringInput < 0f) // Left
+                {
+                    leftWheelHub.steeringAngle = outer * steeringInput;
+                    rightWheelHub.steeringAngle = inner * steeringInput;
+                }
+                else // Straight
+                {
+                    leftWheelHub.steeringAngle = 0f;
+                    rightWheelHub.steeringAngle = 0f;
+                }
+                leftStrut.SetSteeringAngle(leftWheelHub.steeringAngle + leftWheelHub.toeAngle);
+                rightStrut.SetSteeringAngle(rightWheelHub.steeringAngle + rightWheelHub.toeAngle);
             }
+            else if (setAckermannFromGeometry == false && steerable)
+            {
+                float ackermannOffset = maxSteeringAngle * Mathf.Abs(steeringInput) * ackermanPercentage / 2f;
+                if (steeringInput > 0f) // Right
+                {
+                    leftWheelHub.steeringAngle = maxSteeringAngle * steeringInput + ackermannOffset;
+                    rightWheelHub.steeringAngle = maxSteeringAngle * steeringInput - ackermannOffset;
+                }
+                else if (steeringInput < 0f) // Left
+                {
+                    leftWheelHub.steeringAngle = maxSteeringAngle * steeringInput - ackermannOffset;
+                    rightWheelHub.steeringAngle = maxSteeringAngle * steeringInput + ackermannOffset;
+                }
+                else // Straight
+                {
+                    leftWheelHub.steeringAngle = 0f;
+                    rightWheelHub.steeringAngle = 0f;
+                }
+                leftStrut.SetSteeringAngle(leftWheelHub.steeringAngle + leftWheelHub.toeAngle);
+                rightStrut.SetSteeringAngle(rightWheelHub.steeringAngle + rightWheelHub.toeAngle);
+            }
+            else
+            {
+                leftStrut.SetSteeringAngle(leftWheelHub.toeAngle);
+                rightStrut.SetSteeringAngle(rightWheelHub.toeAngle);
+            }
+        }
+
+        public void PostDrivetrainStep(float dt)
+        {
+            leftWheelHub.PostDrivetrainStep(dt);
+            rightWheelHub.PostDrivetrainStep(dt);
         }
         public void SetBrakeInput(float brakeInput)
         {
-            float leftBrakeTorque = brakeInput * leftWheelHub.maxBrakeTorque;
-            float rightBrakeTorque = brakeInput * rightWheelHub.maxBrakeTorque;
-            leftWheelHub.ApplyBrakeTorque(leftBrakeTorque);
-            rightWheelHub.ApplyBrakeTorque(rightBrakeTorque);
+            leftWheelHub.ApplyBrakePressure(brakeInput * brakePressure);
+            rightWheelHub.ApplyBrakePressure(brakeInput * brakePressure);
+            if(handbrakePressure > 0f)
+            {
+                leftWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure);
+                rightWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure);
+            }
         }
         [ContextMenu("Find Geometry Objects")]
         public void FindGameObjects()
@@ -343,12 +409,6 @@ namespace VehicleDynamics
                 else if (child.name == "R_UPPER_WB_CH") rightUpperWishboneChassisMount = child;
                 else if (child.name == "R_UPPER_WB_HUB") rightUpperWishboneHubMount = child;
 
-                // Leaf spring mounts
-                else if (child.name == "L_FRONT_LEAF_CH") leftFrontLeafChassisMount = child;
-                else if (child.name == "L_REAR_LEAF_CH") leftRearLeafChassisMount = child;
-                else if (child.name == "R_FRONT_LEAF_CH") rightFrontLeafChassisMount = child;
-                else if (child.name == "R_REAR_LEAF_CH") rightRearLeafChassisMount = child;
-
                 // Spring mounts
                 else if (child.name == "L_SPRING_CH") leftSpringChassisMount = child;
                 else if (child.name == "L_SPRING_HUB") leftSpringHubMount = child;
@@ -364,7 +424,7 @@ namespace VehicleDynamics
         {
             const float sphereSize = 0.025f;
             // Left lower wishbone
-            if (leftLowerWishboneHinge != null && leftLowerWishboneBall != null)
+            if (leftLowerWishboneHinge != null && leftLowerWishboneBall != null && suspensionType != SuspensionType.SolidAxle)
             {
                 Gizmos.color = Color.green;
                 Gizmos.DrawLine(
@@ -374,7 +434,7 @@ namespace VehicleDynamics
                 Gizmos.DrawCube(leftLowerWishboneHinge.transform.TransformPoint(leftLowerWishboneHinge.anchor), sphereSize * Vector3.one);
                 Gizmos.DrawSphere(leftLowerWishboneBall.transform.TransformPoint(leftLowerWishboneBall.anchor), sphereSize);
             }
-            else if (leftLowerWishboneChassisMount != null && leftLowerWishboneHubMount != null)
+            else if (leftLowerWishboneChassisMount != null && leftLowerWishboneHubMount != null && suspensionType != SuspensionType.SolidAxle)
             {
                 Gizmos.color = Color.green;
                 Gizmos.DrawLine(
@@ -406,7 +466,7 @@ namespace VehicleDynamics
                 Gizmos.DrawSphere(leftUpperWishboneHubMount.position, sphereSize);
             }
             // Right lower wishbone
-            if (rightLowerWishboneHinge != null && rightLowerWishboneBall != null)
+            if (rightLowerWishboneHinge != null && rightLowerWishboneBall != null && suspensionType != SuspensionType.SolidAxle)
             {
                 Gizmos.color = Color.green;
                 Gizmos.DrawLine(
@@ -416,7 +476,7 @@ namespace VehicleDynamics
                 Gizmos.DrawCube(rightLowerWishboneHinge.transform.TransformPoint(rightLowerWishboneHinge.anchor), sphereSize * Vector3.one);
                 Gizmos.DrawSphere(rightLowerWishboneBall.transform.TransformPoint(rightLowerWishboneBall.anchor), sphereSize);
             }
-            else if (rightLowerWishboneChassisMount != null && rightLowerWishboneHubMount != null)
+            else if (rightLowerWishboneChassisMount != null && rightLowerWishboneHubMount != null && suspensionType != SuspensionType.SolidAxle)
             {
                 Gizmos.color = Color.green;
                 Gizmos.DrawLine(
@@ -462,7 +522,7 @@ namespace VehicleDynamics
                 // Bump stop
                 Vector3 leftBumpStopPos = leftStrut.GetSpringChassisAnchor() + -leftStrut.GetSpringDirection() * bumpStopLength;
                 Gizmos.color = Color.blue;
-                Gizmos.DrawCube(leftBumpStopPos, 0.5f * sphereSize * Vector3.one);
+                Gizmos.DrawCube(leftBumpStopPos, sphereSize * Vector3.one);
                 Gizmos.DrawLine(leftBumpStopPos, leftStrut.GetSpringChassisAnchor());
             }
             else if (leftSpringChassisMount != null && leftSpringHubMount != null)
@@ -477,7 +537,7 @@ namespace VehicleDynamics
                 // Bump stop
                 Vector3 leftBumpStopPos = leftSpringChassisMount.position + (leftSpringHubMount.position - leftSpringChassisMount.position).normalized * bumpStopLength;
                 Gizmos.color = Color.blue;
-                Gizmos.DrawCube(leftBumpStopPos, 0.5f * sphereSize * Vector3.one);
+                Gizmos.DrawCube(leftBumpStopPos, sphereSize * Vector3.one);
                 Gizmos.DrawLine(leftBumpStopPos, leftSpringChassisMount.position);
             }
 
@@ -495,7 +555,7 @@ namespace VehicleDynamics
                 // Bump stop
                 Vector3 rightBumpStopPos = rightStrut.GetSpringChassisAnchor() + -rightStrut.GetSpringDirection() * bumpStopLength;
                 Gizmos.color = Color.blue;
-                Gizmos.DrawCube(rightBumpStopPos, 0.5f * sphereSize * Vector3.one);
+                Gizmos.DrawCube(rightBumpStopPos, sphereSize * Vector3.one);
                 Gizmos.DrawLine(rightBumpStopPos, rightStrut.GetSpringChassisAnchor());
             }
             else if (rightSpringChassisMount != null && rightSpringHubMount != null)
@@ -510,11 +570,11 @@ namespace VehicleDynamics
                 // Bump stop
                 Vector3 rightBumpStopPos = rightSpringChassisMount.position + (rightSpringHubMount.position - rightSpringChassisMount.position).normalized * bumpStopLength;
                 Gizmos.color = Color.blue;
-                Gizmos.DrawCube(rightBumpStopPos, 0.5f * sphereSize * Vector3.one);
+                Gizmos.DrawCube(rightBumpStopPos, sphereSize * Vector3.one);
                 Gizmos.DrawLine(rightBumpStopPos, rightSpringChassisMount.position);
             }
             // Draw axle joint
-            if (leftWheelHubMount != null && rightWheelHubMount != null && suspensionType == SuspensionType.LeafSpring)
+            if (leftWheelHubMount != null && rightWheelHubMount != null && suspensionType == SuspensionType.SolidAxle)
             {
                 Gizmos.color = Color.magenta;
                 Gizmos.DrawLine(
@@ -582,14 +642,14 @@ namespace VehicleDynamics
         }
         public float GetAlignmentTorque()
         {
-            float leftTorque = leftWheelHub.wheel.GetAlignmentTorque();
-            float rightTorque = rightWheelHub.wheel.GetAlignmentTorque();
+            float leftTorque = leftWheelHub.GetWheel().GetAlignmentTorque();
+            float rightTorque = rightWheelHub.GetWheel().GetAlignmentTorque();
             return leftTorque + rightTorque;
         }
 
         public Vector3 GetContactForce()
         {
-            return leftWheelHub.wheel.GetContactForce() + rightWheelHub.wheel.GetContactForce();
+            return leftWheelHub.GetWheel().GetContactForce() + rightWheelHub.GetWheel().GetContactForce();
         }
 
         public Vector3 GetLeverArm()
