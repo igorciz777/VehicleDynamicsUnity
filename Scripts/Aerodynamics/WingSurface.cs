@@ -52,7 +52,7 @@ namespace VehicleDynamics
         {
             Gizmos.color = Color.cyan;
             Vector3 center = transform.position;
-            Vector3 right = transform.right * width * 0.5f;
+            Vector3 right = 0.5f * width * transform.right;
             Vector3 forward = Quaternion.AngleAxis(angle, transform.right) * transform.forward * length * 0.5f;
             Vector3 p1 = center - right - forward;
             Vector3 p2 = center + right - forward;

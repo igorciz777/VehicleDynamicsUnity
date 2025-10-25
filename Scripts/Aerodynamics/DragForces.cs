@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -27,10 +25,8 @@ namespace VehicleDynamics
         {
             if (vehicleBody == null) return;
 
-            // TODO: fix weird behavior with yaw drag
             vehicleVelocity = vehicleBody.linearVelocity.magnitude;
-            // yaw angle = body slip angle surrogate
-            vehicleYawAngle = Vector3.SignedAngle(vehicleBody.transform.forward, vehicleBody.linearVelocity.normalized, Vector3.up) * Mathf.Deg2Rad;
+            vehicleYawAngle = Vector3.Dot(vehicleBody.transform.forward, vehicleBody.linearVelocity.normalized);
 
             // Calculate drag force
             Vector3 Fd = 0.5f * airDensity * vehicleVelocity * vehicleVelocity * (dragCoefficient + dragYawCoefficient * vehicleYawAngle) * frontalArea * -vehicleBody.linearVelocity.normalized;
