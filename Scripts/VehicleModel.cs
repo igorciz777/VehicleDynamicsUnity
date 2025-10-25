@@ -16,7 +16,7 @@ namespace VehicleDynamics
         [Range(0f, 1f)] public float throttleInput = 0f;
         [Range(0f, 1f)] public float brakeInput = 0f;
         [Range(0f, 1f)] public float clutchInput = 0f;
-        public bool handbrake = false;
+        [Range(0f, 1f)] public float handbrakeInput = 0f;
         public bool shiftUp = false;
         public bool shiftDown = false;
         [Header("FFB")]
@@ -26,6 +26,12 @@ namespace VehicleDynamics
         public float userWheelMaxAngle = 900f;
         public GameObject visualSteeringWheel;
         private Rigidbody vehicleRigidbody;
+        [Header("ABS Parameters")]
+        public bool hasABS = false;
+        public float absSlipOpt = -0.15f;    // optimal slip
+        public float absSlipTol = 0.05f;     // tolerance before ABS kicks in
+        public float absPressureDropRate = 2000f; // kPa/s
+        public float absPressureRiseRate = 1000f; // kPa/s
         [SerializeField] private Vector3 centerOfMass = Vector3.zero;
         [Header("Text displays")]
         public TMPro.TextMeshProUGUI rpmDisplay;
@@ -49,7 +55,7 @@ namespace VehicleDynamics
             if (carSuspension == null || carSuspension.Length == 0)
             {
                 carSuspension = GetComponentsInChildren<Suspension>();
-                Debug.Assert(carSuspension != null && carSuspension.Length > 0, "No KinematicSuspension components found in children of VehicleModel GameObject.");
+                Debug.Assert(carSuspension != null && carSuspension.Length > 0, "No Suspension components found in children of VehicleModel GameObject.");
             }
 
             // Get drivetrain
@@ -70,7 +76,9 @@ namespace VehicleDynamics
             // Setup visual steering wheel
             if (visualSteeringWheel != null)
             {
-                GameObject wheel = Instantiate(visualSteeringWheel, visualSteeringWheel.transform.position, visualSteeringWheel.transform.rotation, transform);
+                GameObject wheel = new("SteeringWheelTransform");
+                wheel.transform.SetPositionAndRotation(visualSteeringWheel.transform.position, visualSteeringWheel.transform.rotation);
+                wheel.transform.SetParent(transform);
                 visualSteeringWheel.transform.SetParent(wheel.transform);
                 visualSteeringWheel.transform.localRotation = Quaternion.identity;
 
@@ -79,12 +87,6 @@ namespace VehicleDynamics
         void FixedUpdate()
         {
             float dt = Time.fixedDeltaTime;
-            if (drivetrain != null)
-            {
-                drivetrain.throttleInput = throttleInput;
-                drivetrain.clutchInput = clutchInput;
-                drivetrain.Step(dt);
-            }
 
             float steeringWheelInput = Mathf.Clamp(steeringInput * (userWheelMaxAngle / steeringWheelMaxAngle), -1f, 1f);
             alignmentTorque = 0f;
@@ -96,9 +98,24 @@ namespace VehicleDynamics
                     suspension.steeringInput = steeringWheelInput;
                     // Apply braking torque
                     suspension.SetBrakeInput(brakeInput);
-                    alignmentTorque = suspension.GetAlignmentTorque();
+                    alignmentTorque += suspension.GetAlignmentTorque();
 
                     suspension.Step(dt);
+                }
+            }
+
+            if (drivetrain != null)
+            {
+                drivetrain.throttleInput = throttleInput;
+                drivetrain.clutchInput = clutchInput;
+                drivetrain.Step(dt);
+            }
+
+            foreach (var suspension in carSuspension)
+            {
+                if (suspension != null)
+                {
+                    suspension.PostDrivetrainStep(dt);
                 }
             }
 

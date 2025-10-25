@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6cd14f0bc7902cd42bf9ee087f0ef6f3, type: 3}
   m_Name: SimulationSettings
   m_EditorClassIdentifier: 
-  simulationRate: 200
+  simulationRate: 333
   solverIterations: 6
   timeMultiplier: 1
-  maxFrameRate: 600
+  maxFrameRate: 999
   ambientTemperature: 20
   airDensity: 1.225
   gravity: 9.81

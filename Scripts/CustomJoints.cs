@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -112,24 +110,6 @@ namespace VehicleDynamics
 
             return joint;
         }
-        public static ConfigurableJoint CreateUniversalJoint(GameObject bodyA, GameObject bodyB, Vector3 anchor)
-        {
-            var joint = bodyA.AddComponent<ConfigurableJoint>();
-            joint.connectedBody = bodyB.GetComponent<Rigidbody>();
-            joint.anchor = bodyA.transform.InverseTransformPoint(anchor);
-            joint.autoConfigureConnectedAnchor = false;
-            joint.connectedAnchor = bodyB.transform.InverseTransformPoint(anchor);
-
-            joint.xMotion = ConfigurableJointMotion.Free;
-            joint.yMotion = ConfigurableJointMotion.Free;
-            joint.zMotion = ConfigurableJointMotion.Free;
-
-            joint.angularXMotion = ConfigurableJointMotion.Free;
-            joint.angularYMotion = ConfigurableJointMotion.Free;
-            joint.angularZMotion = ConfigurableJointMotion.Free;
-
-            return joint;
-        }
         public static ConfigurableJoint CreateSpringJoint(GameObject bodyA, GameObject bodyB, Vector3 chassisAnchor, Vector3 hubAnchor, float spring, float damper, float springLength)
         {
             var joint = bodyA.AddComponent<ConfigurableJoint>();
@@ -142,10 +122,10 @@ namespace VehicleDynamics
             joint.yMotion = ConfigurableJointMotion.Free;
             joint.zMotion = ConfigurableJointMotion.Free;
 
-            SoftJointLimitSpring limitSpring = new SoftJointLimitSpring { spring = 0, damper = 0 };
+            SoftJointLimitSpring limitSpring = new() { spring = 0, damper = 0 };
             joint.linearLimitSpring = limitSpring;
 
-            JointDrive drive = new JointDrive
+            JointDrive drive = new()
             {
                 positionSpring = spring,
                 positionDamper = damper,
@@ -172,28 +152,14 @@ namespace VehicleDynamics
             joint.angularZMotion = ConfigurableJointMotion.Locked;
 
 
-            // Drive angular YZ to prevent excessive camber and toe
-            JointDrive angularDrive = new JointDrive
+            // Steering drive
+            JointDrive angularDrive = new()
             {
-                positionSpring = 10000f,
-                positionDamper = 10f,
+                positionSpring = 20000f,
+                positionDamper = 100f,
                 maximumForce = Mathf.Infinity
             };
             joint.angularXDrive = angularDrive;
-            joint.angularYZDrive = angularDrive;
-
-            Vector3 chassisUp = bodyA.transform.up;
-            Vector3 chassisFwd = bodyA.transform.forward;
-
-            // Project onto plane perpendicular to chassis forward (ignore caster)
-            Vector3 upAxis = (chassisAnchor - hubAnchor).normalized;
-            Vector3 leftStrutProj = Vector3.ProjectOnPlane(upAxis, chassisFwd).normalized;
-            Vector3 upProj = Vector3.ProjectOnPlane(chassisUp, chassisFwd).normalized;
-
-            float angle = 360f - Vector3.SignedAngle(upProj, leftStrutProj, chassisFwd);
-
-            joint.targetRotation =
-                Quaternion.AngleAxis(angle, Vector3.forward);
 
             return joint;
         }
@@ -210,7 +176,7 @@ namespace VehicleDynamics
             joint.zMotion = ConfigurableJointMotion.Limited;
 
             // Allow very tiny flex
-            SoftJointLimit limit = new SoftJointLimit { limit = 0.001f };
+            SoftJointLimit limit = new() { limit = 0.001f };
             joint.linearLimit = limit;
 
             joint.angularXMotion = ConfigurableJointMotion.Locked;
@@ -219,43 +185,6 @@ namespace VehicleDynamics
 
             joint.axis = Vector3.right;
             joint.secondaryAxis = Vector3.up;
-            joint.configuredInWorldSpace = false;
-            return joint;
-        }
-        public static ConfigurableJoint CreateTranslationalJoint(GameObject bodyA, GameObject bodyB, Vector3 anchor, Vector3 axis, float limit = 0.1f)
-        {
-            var joint = bodyA.AddComponent<ConfigurableJoint>();
-            joint.connectedBody = bodyB.GetComponent<Rigidbody>();
-            joint.anchor = bodyA.transform.InverseTransformPoint(anchor);
-            joint.autoConfigureConnectedAnchor = false;
-            joint.connectedAnchor = bodyB.transform.InverseTransformPoint(anchor);
-            if (axis == Vector3.right)
-            {
-                joint.xMotion = ConfigurableJointMotion.Limited;
-                joint.yMotion = ConfigurableJointMotion.Locked;
-                joint.zMotion = ConfigurableJointMotion.Locked;
-            }
-            else if (axis == Vector3.up)
-            {
-                joint.xMotion = ConfigurableJointMotion.Locked;
-                joint.yMotion = ConfigurableJointMotion.Limited;
-                joint.zMotion = ConfigurableJointMotion.Locked;
-            }
-            else if (axis == Vector3.forward)
-            {
-                joint.xMotion = ConfigurableJointMotion.Locked;
-                joint.yMotion = ConfigurableJointMotion.Locked;
-                joint.zMotion = ConfigurableJointMotion.Limited;
-            }
-
-            joint.linearLimit = new SoftJointLimit { limit = limit };
-
-            joint.angularXMotion = ConfigurableJointMotion.Free;
-            joint.angularYMotion = ConfigurableJointMotion.Free;
-            joint.angularZMotion = ConfigurableJointMotion.Free;
-
-            joint.axis = axis.normalized;
-            joint.secondaryAxis = Vector3.Cross(axis.normalized, Vector3.up).normalized;
             joint.configuredInWorldSpace = false;
             return joint;
         }

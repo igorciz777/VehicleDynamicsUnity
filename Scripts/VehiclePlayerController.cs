@@ -18,10 +18,10 @@ namespace VehicleDynamics
         public bool invertBrake = false;
         public float clutchAxis = 0f;
         public bool invertClutch = false;
-        public bool handbrakeButton = false;
+        public float handbrakeAxis = 0f;
+        public bool invertHandbrake = false;
         public bool shiftUpButton = false;
         public bool shiftDownButton = false;
-        public bool keyboardInput = true;
         public bool mouseInput = false;
 
         public InputAction steeringAction;
@@ -96,7 +96,8 @@ namespace VehicleDynamics
             if (invertBrake) brakeAxis = 1f - brakeAxis;
             clutchAxis = clutchAction.ReadValue<float>();
             if (invertClutch) clutchAxis = 1f - clutchAxis;
-            handbrakeButton = handbrakeAction.ReadValue<float>() > 0.5f;
+            handbrakeAxis = handbrakeAction.ReadValue<float>();
+            if (invertHandbrake) handbrakeAxis = 1f - handbrakeAxis;
             shiftUpButton = shiftUpAction.triggered;
             shiftDownButton = shiftDownAction.triggered;
 
@@ -124,6 +125,7 @@ namespace VehicleDynamics
                 vehicleModel.throttleInput = throttleAxis;
                 vehicleModel.brakeInput = brakeAxis;
                 vehicleModel.clutchInput = clutchAxis;
+                vehicleModel.handbrakeInput = handbrakeAxis;
             }
         }
 
