@@ -65,7 +65,7 @@ namespace VehicleDynamics
             // springDirection = hubBody.transform.up;
 
             // Max force
-            maxForce = chassisBody.mass * 9.81f;
+            maxForce = chassisBody.mass * Mathf.Abs(Physics.gravity.y);
 
             strutJoint = CustomJoints.CreateSpringJoint(
                 chassisBody.gameObject, hubBody.gameObject,

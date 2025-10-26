@@ -41,6 +41,7 @@ public class Clutch : MonoBehaviour
             slip = 0f;
             clutchTorque = 0f;
             thetac = 0f;
+            clutchEngagement = 0f;
             return;
         }
 

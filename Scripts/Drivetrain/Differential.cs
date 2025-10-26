@@ -17,6 +17,7 @@ namespace VehicleDynamics
         public Hub leftWheel;
         public Hub rightWheel;
         public float differentialRatio = 3.5f; // Final drive ratio
+        public bool engaged = false; // Is the differential engaged
         
         [Header("LSD Parameters")]
         [Range(0f, 1f)]
@@ -25,13 +26,6 @@ namespace VehicleDynamics
         public float maxLockTorque = 500f; // Maximum LSD torque
         public float viscosity = 0.8f; // For viscous LSD behavior
         public float rampAngle = 45f; // Torque ramp-up rate
-
-        void Start()
-        {
-            leftWheel.GetWheel().isPowered = true;
-            rightWheel.GetWheel().isPowered = true;
-        }
-
         public (float leftWheelTorque, float rightWheelTorque) GetDownTorque(float inputTorque)
         {
             inputTorque *= differentialRatio;

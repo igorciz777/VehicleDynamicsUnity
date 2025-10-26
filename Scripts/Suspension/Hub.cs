@@ -17,8 +17,9 @@ namespace VehicleDynamics
         public float tireMass = 10f; // kg
         public float tirePressure = 220000f; // Pa [N/m^2]
         [Range(0.1f, 2.0f)]
-        public float tireDampingRatio = 1f; 
+        public float tireDampingRatio = 1f;
         public float tireNominalLoad = 4000f; // N
+        public float tireRelaxationLength = 0.3f; // m
 
         [Header("Suspension Runtime")]
         [HideInInspector] public bool rightSided = false;
