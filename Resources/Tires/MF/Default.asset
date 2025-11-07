@@ -1,0 +1,93 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fa00413ef843904fb446a9475fdde5c, type: 3}
+  m_Name: Default
+  m_EditorClassIdentifier: 
+  tireMass: 10
+  pCx1: 1.6
+  pDx1: 1.5
+  pDx2: -0.16
+  pDx3: 0
+  pEx1: 0.45
+  pEx2: 0.9
+  pEx3: 0.07
+  pEx4: 0
+  pKx1: 22
+  pKx2: 0.5
+  pKx3: 0.2
+  pHx1: 0.001
+  pHx2: 0.0005
+  pVx1: 0
+  pVx2: 0
+  pCy1: 1.35
+  pDy1: 1.4
+  pDy2: -0.3
+  pDy3: -2.5
+  pEy1: -0.5
+  pEy2: -0.005
+  pEy3: -5
+  pEy4: -500
+  pKy1: -20
+  pKy2: 2
+  pKy3: -0.025
+  pHy1: 0.002
+  pHy2: 0
+  pHy3: 0.03
+  pVy1: 0.04
+  pVy2: -0.01
+  pVy3: -0.3
+  pVy4: -0.7
+  qBz1: 10
+  qBz2: -2
+  qBz3: -0.5
+  qBz4: 0.04
+  qBz5: 0.4
+  qBz9: 8.9
+  qBz10: 0
+  qCz1: 1.2
+  qDz1: 0.09
+  qDz2: -0.009
+  qDz3: -0.05
+  qDz4: 0.75
+  qDz6: -0.007
+  qDz7: 0.005
+  qDz8: -0.18
+  qDz9: 0.03
+  qEz1: -1.5
+  qEz2: 0.33
+  qEz3: 0
+  qEz4: 0.27
+  qEz5: -3.6
+  qHz1: 0.004
+  qHz2: 0.002
+  qHz3: 0.12
+  qHz4: 0.06
+  rBx1: 12
+  rBx2: 10
+  rCx1: 1.25
+  rEx1: 0.65
+  rEx2: -0.25
+  rHx1: 0.005
+  rBy1: 8
+  rBy2: 9
+  rBy3: -0.0275
+  rCy1: 1
+  rEy1: -0.275
+  rEy2: 0.33
+  rHy1: 0
+  rHy2: 0
+  rVy1: -0.0275
+  rVy2: 0.05
+  rVy3: -0.275
+  rVy4: 12
+  rVy5: 1.9
+  rVy6: -10.7

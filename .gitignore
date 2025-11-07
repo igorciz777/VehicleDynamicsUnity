@@ -90,3 +90,6 @@ crashlytics-build.properties
 *.vcxproj.filters
 *.vcxproj.filters.user
 DirectIn.*
+
+# TMP files
+/TextMesh Pro
