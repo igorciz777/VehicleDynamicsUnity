@@ -20,7 +20,7 @@ namespace VehicleDynamics
         [Header("Internal")]
         private AnimationCurve engagementCurve;
 
-        void Start()
+        public void Init()
         {
             engagementCurve = new AnimationCurve();
             engagementCurve.AddKey(0f, 0f);

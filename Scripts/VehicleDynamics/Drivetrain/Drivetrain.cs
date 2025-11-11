@@ -19,12 +19,15 @@ namespace VehicleDynamics
         [Header("Differentials")]
         public Differential frontDifferential; // can be null for RWD
         public Differential rearDifferential;  // can be null for FWD
+        [Header("Subsystems")]
         public Transmission transmission;
         public Clutch clutch;
         public Engine engine;
+        private VehicleModel vM;
 
-        private void Start()
+        public void Init(VehicleModel vehicleModel)
         {
+            vM = vehicleModel;
             // Initialize components
             if (vehicleBody == null && TryGetComponent(out Rigidbody rb))
                 vehicleBody = rb;
@@ -51,6 +54,8 @@ namespace VehicleDynamics
                     Debug.Assert(frontDifferential != null && rearDifferential != null, "Both front and rear differentials must be assigned for AWD with fixed center.");
                     break;
             }
+            engine.Init();
+            clutch.Init();
         }
 
         public void Step(float dt)
@@ -58,6 +63,45 @@ namespace VehicleDynamics
             // Clamp inputs
             throttleInput = Mathf.Clamp01(throttleInput);
             clutchInput = Mathf.Clamp01(clutchInput);
+
+            if (vM.hasTCS)
+            {
+                float vehicleSpeed = vM.vehicleRigidbody.linearVelocity.magnitude;
+                if (vehicleSpeed > vM.tcsMinVelocity)
+                {
+                    float slipOpt = vM.tcsSlipOpt;
+                    float slipTol = vM.tcsSlipTol;
+
+                    float currentSlip = 0f;
+
+                    switch (layout)
+                    {
+                        case DrivetrainLayout.RWD:
+                            currentSlip = rearDifferential.leftWheelHub.GetWheel().slipRatio;
+                            currentSlip = Mathf.Max(currentSlip, rearDifferential.rightWheelHub.GetWheel().slipRatio);
+                            break;
+
+                        case DrivetrainLayout.FWD:
+                            currentSlip = frontDifferential.leftWheelHub.GetWheel().slipRatio;
+                            currentSlip = Mathf.Max(currentSlip, frontDifferential.rightWheelHub.GetWheel().slipRatio);
+                            break;
+
+                        case DrivetrainLayout.CenterDiffAWD:
+                        case DrivetrainLayout.Fixed4WD:
+                            currentSlip = frontDifferential.leftWheelHub.GetWheel().slipRatio;
+                            currentSlip = Mathf.Max(currentSlip, frontDifferential.rightWheelHub.GetWheel().slipRatio);
+                            currentSlip = Mathf.Max(currentSlip, rearDifferential.leftWheelHub.GetWheel().slipRatio);
+                            currentSlip = Mathf.Max(currentSlip, rearDifferential.rightWheelHub.GetWheel().slipRatio);
+                            break;
+                    }
+
+                    if (Mathf.Abs(currentSlip) > slipOpt + slipTol && throttleInput > 0f)
+                    {
+                        engine.StartCoroutine(engine.ThrottleLimiterCoroutine(0.1f));
+                        // Debug.Log("TCS activated");
+                    }
+                }
+            }
 
             // Step engine
             engine.Step(dt, throttleInput, clutch.clutchTorque);
@@ -95,39 +139,39 @@ namespace VehicleDynamics
             {
                 case DrivetrainLayout.RWD:
                     var (rearLeftTorque, rearRightTorque) = rearDifferential.GetDownTorque(driveshaftTorque);
-                    rearDifferential.leftWheel.ApplyDriveTorque(rearLeftTorque);
-                    rearDifferential.rightWheel.ApplyDriveTorque(rearRightTorque);
+                    rearDifferential.leftWheelHub.ApplyDriveTorque(rearLeftTorque);
+                    rearDifferential.rightWheelHub.ApplyDriveTorque(rearRightTorque);
                     break;
 
                 case DrivetrainLayout.FWD:
                     var (frontLeftTorque, frontRightTorque) = frontDifferential.GetDownTorque(driveshaftTorque);
-                    frontDifferential.leftWheel.ApplyDriveTorque(frontLeftTorque);
-                    frontDifferential.rightWheel.ApplyDriveTorque(frontRightTorque);
+                    frontDifferential.leftWheelHub.ApplyDriveTorque(frontLeftTorque);
+                    frontDifferential.rightWheelHub.ApplyDriveTorque(frontRightTorque);
                     break;
 
-                case DrivetrainLayout.CenterDiffAWD: // Power split
-                    var (centerFrontTorque, centerRearTorque) = Differential.CalculateCenterDiffTorque(
+                case DrivetrainLayout.CenterDiffAWD:
+                    float frontTorque = driveshaftTorque * powerSplitFront;
+                    float rearTorque = driveshaftTorque * (1f - powerSplitFront);
+                    var (fixedFrontLeftTorque, fixedFrontRightTorque) = frontDifferential.GetDownTorque(frontTorque);
+                    var (fixedRearLeftTorque, fixedRearRightTorque) = rearDifferential.GetDownTorque(rearTorque);
+                    frontDifferential.leftWheelHub.ApplyDriveTorque(fixedFrontLeftTorque);
+                    frontDifferential.rightWheelHub.ApplyDriveTorque(fixedFrontRightTorque);
+                    rearDifferential.leftWheelHub.ApplyDriveTorque(fixedRearLeftTorque);
+                    rearDifferential.rightWheelHub.ApplyDriveTorque(fixedRearRightTorque);
+                    break;
+
+                case DrivetrainLayout.Fixed4WD:
+                    var (centerFrontTorque, centerRearTorque) = Differential.CalculateFixedDiffTorque(
                         driveshaftTorque,
                         frontDifferential.GetUpVelocity(),
                         rearDifferential.GetUpVelocity(),
                         powerSplitFront);
                     var (cdFrontLeftTorque, cdFrontRightTorque) = frontDifferential.GetDownTorque(centerFrontTorque);
                     var (cdRearLeftTorque, cdRearRightTorque) = rearDifferential.GetDownTorque(centerRearTorque);
-                    frontDifferential.leftWheel.ApplyDriveTorque(cdFrontLeftTorque);
-                    frontDifferential.rightWheel.ApplyDriveTorque(cdFrontRightTorque);
-                    rearDifferential.leftWheel.ApplyDriveTorque(cdRearLeftTorque);
-                    rearDifferential.rightWheel.ApplyDriveTorque(cdRearRightTorque);
-                    break;
-
-                case DrivetrainLayout.Fixed4WD: // Equal split
-                    float frontTorque = driveshaftTorque * 0.5f;
-                    float rearTorque = driveshaftTorque * 0.5f;
-                    var (fixedFrontLeftTorque, fixedFrontRightTorque) = frontDifferential.GetDownTorque(frontTorque);
-                    var (fixedRearLeftTorque, fixedRearRightTorque) = rearDifferential.GetDownTorque(rearTorque);
-                    frontDifferential.leftWheel.ApplyDriveTorque(fixedFrontLeftTorque);
-                    frontDifferential.rightWheel.ApplyDriveTorque(fixedFrontRightTorque);
-                    rearDifferential.leftWheel.ApplyDriveTorque(fixedRearLeftTorque);
-                    rearDifferential.rightWheel.ApplyDriveTorque(fixedRearRightTorque);
+                    frontDifferential.leftWheelHub.ApplyDriveTorque(cdFrontLeftTorque);
+                    frontDifferential.rightWheelHub.ApplyDriveTorque(cdFrontRightTorque);
+                    rearDifferential.leftWheelHub.ApplyDriveTorque(cdRearLeftTorque);
+                    rearDifferential.rightWheelHub.ApplyDriveTorque(cdRearRightTorque);
                     break;
             }
         }

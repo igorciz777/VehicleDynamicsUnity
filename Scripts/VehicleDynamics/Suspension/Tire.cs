@@ -1,3 +1,4 @@
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -193,20 +194,21 @@ namespace VehicleDynamics
         public override float GetPureLateral()
         {
             float gam_y = tr.gam; // Inclination angle for lateral forces
+            float gam_y_s = Mathf.Sin(gam_y); // Camber spin
 
-            Svy = tr.Fz * (td.pVy1 + td.pVy2 * dfz + (td.pVy3 + td.pVy4 * dfz) * gam_y) * tr.degMu.y; // Fy vertical shift
-            Shy = td.pHy1 + td.pHy2 * dfz + (td.pHy3 * gam_y); // Fy horizontal shift
+            Svy = tr.Fz * (td.pVy1 + td.pVy2 * dfz + (td.pVy3 + td.pVy4 * dfz) * gam_y_s) * tr.degMu.y; // Fy vertical shift
+            Shy = td.pHy1 + td.pHy2 * dfz + (td.pHy3 * gam_y_s); // Fy horizontal shift
 
             float alph_y = tr.alph + Shy; // Shifted slip angle
 
-            muy = (td.pDy1 + td.pDy2 * dfz) * (1 - td.pDy3 * gam_y * gam_y) * tr.compMu.y; // Friction coefficient
+            muy = (td.pDy1 + td.pDy2 * dfz) * (1 - td.pDy3 * gam_y_s * gam_y_s) * tr.compMu.y; // Friction coefficient
 
             float Ky0 = td.pKy1 * Fz0_prim * Mathf.Sin(2f * Mathf.Atan(tr.Fz / (td.pKy2 * Fz0_prim))); // Cornering stiffness at Fznom
-            Ky = Ky0 * (1 - td.pKy3 * Mathf.Abs(gam_y)); // Cornering stiffness
+            Ky = Ky0 * (1 - td.pKy3 * Mathf.Abs(gam_y_s)); // Cornering stiffness
             Cy = td.pCy1; // Shape factor
             float Dy = muy * tr.Fz; // Peak value
             By = Ky / (Cy * Dy + Mathf.Epsilon); // Stiffness factor
-            float Ey = (td.pEy1 + td.pEy2 * dfz) * (1 - (td.pEy3 + td.pEy4 * gam_y) * Mathf.Sign(alph_y)); // Curvature factor
+            float Ey = (td.pEy1 + td.pEy2 * dfz) * (1 - (td.pEy3 + td.pEy4 * gam_y_s) * Mathf.Sign(alph_y)); // Curvature factor
             if (Ey > 1f) Ey = 1f;
 
             Fy0 = Dy * Mathf.Sin(Cy * Mathf.Atan(By * alph_y - Ey * (By * alph_y - Mathf.Atan(By * alph_y)))) + Svy; // Pure lateral force
@@ -216,21 +218,22 @@ namespace VehicleDynamics
         public override float GetPureAligningTorque()
         {
             float gam_z = tr.gam; // Inclination angle for aligning torque
+            float gam_z_s = Mathf.Sin(gam_z); // Camber spin
 
             float Shf = Shy + Svy / (Ky + Mathf.Epsilon); // Horizontal shift of pneumatic trail
-            float Sht = td.qHz1 + td.qHz2 * dfz + (td.qHz3 + td.qHz4 * dfz) * gam_z; // Horizontal shift of pneumatic trail
+            float Sht = td.qHz1 + td.qHz2 * dfz + (td.qHz3 + td.qHz4 * dfz) * gam_z_s; // Horizontal shift of pneumatic trail
 
             alph_t = tr.alph + Sht; // Slip angle for pneumatic trail
             alph_r = tr.alph + Shf; // Slip angle for residual moment
 
             Cr = 1f; // Shape factor for residual moment
-            Dr = tr.Fz * (td.qDz6 + td.qDz7 * dfz + (td.qDz8 + td.qDz9 * dfz) * gam_z) * tr.r0 * tr.compMu.y; // Peak value of residual moment
+            Dr = tr.Fz * (td.qDz6 + td.qDz7 * dfz + (td.qDz8 + td.qDz9 * dfz) * gam_z_s) * tr.r0 * tr.compMu.y; // Peak value of residual moment
             Br = td.qBz9 * (1f / tr.compMu.y) + td.qBz10 * By * Cy; // Slope factor of residual moment
 
             Ct = td.qCz1;
-            Bt = (td.qBz1 + td.qBz2 * dfz + td.qBz3 * dfz * dfz) * (1 + td.qBz4 * gam_z + td.qBz5 * Mathf.Abs(gam_z)) * 1f / tr.compMu.y; // Slope factor of pneumatic trail
-            Dt = tr.Fz * (td.qDz1 + td.qDz2 * dfz) * (1 + td.qDz3 * gam_z + td.qDz4 * gam_z * gam_z) * (tr.r0 / Fz0_prim);
-            Et = (td.qEz1 + td.qEz2 * dfz + td.qEz3 * dfz * dfz) * (1 + (td.qEz4 + td.qEz5 * gam_z) * (2f / Mathf.PI * Mathf.Atan(Bt * Ct * alph_t)));
+            Bt = (td.qBz1 + td.qBz2 * dfz + td.qBz3 * dfz * dfz) * (1 + td.qBz4 * gam_z_s + td.qBz5 * Mathf.Abs(gam_z_s)) * 1f / tr.compMu.y; // Slope factor of pneumatic trail
+            Dt = tr.Fz * (td.qDz1 + td.qDz2 * dfz) * (1 + td.qDz3 * gam_z_s + td.qDz4 * gam_z_s * gam_z_s) * (tr.r0 / Fz0_prim);
+            Et = (td.qEz1 + td.qEz2 * dfz + td.qEz3 * dfz * dfz) * (1 + (td.qEz4 + td.qEz5 * gam_z_s) * (2f / Mathf.PI * Mathf.Atan(Bt * Ct * alph_t)));
             if (Et > 1f) Et = 1f;
 
             float Mzr = Dr * Mathf.Cos(Cr * Mathf.Atan(Br * alph_r)) * Mathf.Cos(tr.alph); // Residual moment
@@ -262,6 +265,7 @@ namespace VehicleDynamics
         public override float GetCombinedLateral()
         {
             float Fy0 = GetPureLateral();
+            float gam_y_s = Mathf.Sin(tr.gam); // Camber spin
 
             float Cyk = td.rCy1; // Shape factor for combined slip
             float Byk = td.rBy1 * Mathf.Cos(Mathf.Atan(td.rBy2 * (tr.alph - td.rBy3))); // Slope factor for combined slip
@@ -269,7 +273,7 @@ namespace VehicleDynamics
             if (Eyk > 1f) Eyk = 1f;
 
             float Shyk = td.rHy1 + td.rHy2 * dfz; // Horizontal shift for combined slip
-            float Dvyk = muy * tr.Fz * (td.rVy1 + td.rVy2 * dfz + td.rVy3 * tr.gam) * Mathf.Cos(Mathf.Atan(td.rVy4 * tr.alph));
+            float Dvyk = muy * tr.Fz * (td.rVy1 + td.rVy2 * dfz + td.rVy3 * gam_y_s) * Mathf.Cos(Mathf.Atan(td.rVy4 * tr.alph));
             Svyk = Dvyk * Mathf.Sin(td.rVy5 * Mathf.Atan(td.rVy6 * tr.kap)); // Kappa-induced side force
 
             float kap_s = tr.kap + Shyk; // Shifted slip ratio for combined slip

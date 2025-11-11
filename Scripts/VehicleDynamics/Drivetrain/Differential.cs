@@ -13,8 +13,8 @@ namespace VehicleDynamics
 
         [Header("Differential Parameters")]
         public DifferentialType differentialType = DifferentialType.Open;
-        public Hub leftWheel;
-        public Hub rightWheel;
+        public Hub leftWheelHub;
+        public Hub rightWheelHub;
         public float differentialRatio = 3.5f; // Final drive ratio
         
         [Header("LSD Parameters")]
@@ -28,10 +28,10 @@ namespace VehicleDynamics
         {
             inputTorque *= differentialRatio;
 
-            float leftOmega = leftWheel.GetWheel().wheelAngularVelocity;
-            float rightOmega = rightWheel.GetWheel().wheelAngularVelocity;
-            float leftSlip = leftWheel.GetWheel().slipRatio;
-            float rightSlip = rightWheel.GetWheel().slipRatio;
+            float leftOmega = leftWheelHub.GetWheel().wheelAngularVelocity;
+            float rightOmega = rightWheelHub.GetWheel().wheelAngularVelocity;
+            float leftSlip = leftWheelHub.GetWheel().slipRatio;
+            float rightSlip = rightWheelHub.GetWheel().slipRatio;
 
             return differentialType switch
             {
@@ -98,7 +98,7 @@ namespace VehicleDynamics
             float rightError = avgOmega - rightOmega;
             
             // Apply correction torque to equalize speeds
-            float correctionGain = 100f;
+            float correctionGain = 10f;
             float leftCorrection = leftError * correctionGain;
             float rightCorrection = rightError * correctionGain;
             
@@ -143,34 +143,43 @@ namespace VehicleDynamics
 
         public float GetUpVelocity()
         {
-            return (leftWheel.GetWheel().wheelAngularVelocity + rightWheel.GetWheel().wheelAngularVelocity) *
+            return (leftWheelHub.GetWheel().wheelAngularVelocity + rightWheelHub.GetWheel().wheelAngularVelocity) *
                    differentialRatio * 0.5f;
         }
         
-        public static (float frontTorque, float rearTorque) CalculateCenterDiffTorque(float inputTorque, float frontOmega, float rearOmega, float powerSplitFront)
+        public static (float frontTorque, float rearTorque) CalculateFixedDiffTorque(float inputTorque, float frontOmega, float rearOmega, float powerSplitFront)
         {
-            // Locked differential, equal wheel speeds
             float avgOmega = (frontOmega + rearOmega) * 0.5f;
             float frontError = avgOmega - frontOmega;
             float rearError = avgOmega - rearOmega;
 
-            // Apply correction torque to equalize speeds
-            float correctionGain = 100f;
+            float correctionGain = 10f;
             float frontCorrection = frontError * correctionGain;
             float rearCorrection = rearError * correctionGain;
 
-            float baseFrontTorque = inputTorque * 0.5f + frontCorrection;
-            float baseRearTorque = inputTorque * 0.5f + rearCorrection;
+            float baseFront = inputTorque * Mathf.Clamp01(powerSplitFront) + frontCorrection;
+            float baseRear = inputTorque * Mathf.Clamp01(1f - powerSplitFront) + rearCorrection;
 
-            float totalTorque = baseFrontTorque + baseRearTorque;
-            if (totalTorque > 0)
+            // Sanity cap
+            float maxAllowed = Mathf.Abs(inputTorque) * 10f + 1f;
+            baseFront = Mathf.Clamp(baseFront, -maxAllowed, maxAllowed);
+            baseRear = Mathf.Clamp(baseRear, -maxAllowed, maxAllowed);
+
+            float total = baseFront + baseRear;
+            if (Mathf.Abs(total) > Mathf.Epsilon)
             {
-                float scale = inputTorque / totalTorque;
-                baseFrontTorque *= scale * powerSplitFront;
-                baseRearTorque *= scale * (1 - powerSplitFront);
+                float scale = inputTorque / total;
+                baseFront *= scale;
+                baseRear *= scale;
+            }
+            else
+            {
+                // Fallback to the static split if corrections zeroed total
+                baseFront = inputTorque * Mathf.Clamp01(powerSplitFront);
+                baseRear = inputTorque * Mathf.Clamp01(1f - powerSplitFront);
             }
 
-            return (baseFrontTorque, baseRearTorque);
+            return (baseFront, baseRear);
         }
     }
 }

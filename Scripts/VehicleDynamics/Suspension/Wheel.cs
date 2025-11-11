@@ -40,7 +40,7 @@ namespace VehicleDynamics
         [SerializeField] private float wheelEffectiveRadius = 0f;
 
         [Header("References")]
-        public Hub hub;
+        private Hub hub;
         private Rigidbody hubBody;
         private Rigidbody vehicleBody;
 
@@ -53,13 +53,14 @@ namespace VehicleDynamics
         private float currRollingResistanceCoefficient = 0f;
 
         // Force cap
-        private const float maxVerticalForce = 600000f;
+        private const float maxForce = 600000f;
 
         public Tire tireModel;
         private TireInput tireInput;
 
-        void Start()
+        public void Init(Hub hub)
         {
+            this.hub = hub;
             hubBody = hub.hubBody;
             vehicleBody = hub.vehicleBody;
             wheelUnloadedRadius = hub.wheelUnloadedRadius;
@@ -83,7 +84,6 @@ namespace VehicleDynamics
 
             tireDampingStiffness = 2f * hub.tireDampingRatio * Mathf.Sqrt(hub.tirePressure * hub.tireMass);
         }
-        // TODO: provide tire - contact patch camber angle for tire input rather than suspension camber
         public void Step(float dt)
         {
             Vector3 wheelCenter = hub.wheelCenter;
@@ -199,7 +199,7 @@ namespace VehicleDynamics
             float dampingForce = -penVel * tireDampingStiffness;
 
             float verticalForce = stiffnessForce + dampingForce;
-            verticalForce = Mathf.Clamp(verticalForce, -maxVerticalForce, maxVerticalForce);
+            verticalForce = Mathf.Clamp(verticalForce, -maxForce, maxForce);
             normalLoad = verticalForce;
 
             // Compute loaded/effective radius
@@ -210,7 +210,6 @@ namespace VehicleDynamics
             Vector3 wheelSpinAxis = hub.rightSided ? -transform.right : transform.right;
             float theta = Mathf.Acos(Vector3.Dot(contactNormal, wheelSpinAxis));
             tireContactCamberAngle = (Mathf.PI / 2f) - theta;
-
             // Set class-wheel state
             wheelEffectiveRadius = effectiveRadius;
             wheelLoadedRadius = loadedRadius;
@@ -256,7 +255,8 @@ namespace VehicleDynamics
             if (Mathf.Abs(verticalForce) > Mathf.Epsilon)
                 hubBody.AddForceAtPosition(verticalForce * contactNormal, contactPoint, ForceMode.Force);
 
-            hubBody.AddForceAtPosition(roadForce, contactPoint, ForceMode.Force);
+            if(roadForce.sqrMagnitude > Mathf.Epsilon)
+                hubBody.AddForceAtPosition(roadForce, contactPoint, ForceMode.Force);
 
             // Apply aligning torque
             alignmentTorque = tireForces.w;

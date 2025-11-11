@@ -73,7 +73,7 @@ namespace VehicleDynamics
         public AudioClip turboSoundClip;
         private AudioSource turboSound;
         public float turboSoundPitchMultiplier = 1.5f;
-        void Start()
+        public void Init()
         {
             engineAngularVelocity = rpmIdle * RPM_TO_RADS;
 
@@ -92,6 +92,7 @@ namespace VehicleDynamics
                 engineSound.playOnAwake = true;
                 engineSound.spatialBlend = 1.0f;
                 engineSound.volume = 0.0f;
+                engineSound.dopplerLevel = 0f;
                 engineSound.Play();
             }
             // Setup turbo audio
@@ -103,6 +104,7 @@ namespace VehicleDynamics
                 turboSound.playOnAwake = true;
                 turboSound.spatialBlend = 1.0f;
                 turboSound.volume = 0.0f;
+                turboSound.dopplerLevel = 0f;
                 turboSound.Play();
             }
         }
@@ -113,7 +115,7 @@ namespace VehicleDynamics
 
             // Rev limiter
             if (hasRevLimiter && engineRpm > rpmLimiter && !isThrottleLimiterActive)
-                StartCoroutine(ThrottleLimiterCoroutine());
+                StartCoroutine(ThrottleLimiterCoroutine(limiterDuration));
             if (isThrottleLimiterActive)
                 throttleMapped = 0f;
 
@@ -191,6 +193,7 @@ namespace VehicleDynamics
             if (turboSound == null) return;
             turboSound.pitch = 0.5f + boostLevel / 100f * turboSoundPitchMultiplier;
             turboSound.volume = boostLevel / 100f * 0.2f;
+            if (engineRpm < 100f) turboSound.volume = boostLevel / 100f * 0.2f * (engineRpm / 100f);
         }
         private float CalculateMagicTorque(float rpm, float throttlePercent)
         {
@@ -206,10 +209,10 @@ namespace VehicleDynamics
                 result = 0f;
             return result;
         }
-        private IEnumerator ThrottleLimiterCoroutine()
+        public IEnumerator ThrottleLimiterCoroutine(float duration)
         {
             isThrottleLimiterActive = true;
-            yield return new WaitForSeconds(limiterDuration);
+            yield return new WaitForSeconds(duration);
             isThrottleLimiterActive = false;
         }
     }

@@ -54,9 +54,9 @@ namespace VehicleDynamics
         public float minSquealPitch = 0.6f;
         public float maxSquealPitch = 1.3f;
 
-        void Awake()
+        public void Init(Suspension pS)
         {
-            pS = GetComponentInParent<Suspension>();
+            this.pS = pS;
             vehicleBody = pS.GetComponentInParent<Rigidbody>();
             hubBody = GetComponent<Rigidbody>();
 
@@ -77,7 +77,7 @@ namespace VehicleDynamics
             dummyWheel = new GameObject("dummyWheel");
             dummyWheel.transform.SetParent(pS.transform);
             wheel = dummyWheel.AddComponent<Wheel>();
-            wheel.hub = this;
+            wheel.Init(this);
 
             wheelCenter = transform.position + transform.right * (rightSided ? pS.hubSpacing : -pS.hubSpacing);
             wheelInertia = 0.5f * wheelMass * wheelUnloadedRadius * wheelUnloadedRadius;
@@ -86,9 +86,6 @@ namespace VehicleDynamics
             col.radius = 0.1f;
             col.height = 0.1f;
             gameObject.layer = LayerMask.NameToLayer("WheelCollider");
-        }
-        void Start()
-        {
             // Set visual wheel parent to dummy wheel
             if (visualWheel != null)
             {
@@ -170,28 +167,20 @@ namespace VehicleDynamics
         {
             wheel.ApplyBrakeTorque(brakeTorque);
         }
-        public void ApplyBrakePressure(float brakePressure)
+        public void ApplyBrakePressure(float brakePressure, bool handbrake=false)
         {
             bool ABS = pS.vehicleModel.hasABS;
-            if (ABS)
+            float vehicleSpeed = pS.vehicleModel.vehicleRigidbody.linearVelocity.magnitude;
+            if (ABS && vehicleSpeed > pS.vehicleModel.absMinVelocity && !handbrake)
             {
                 float wheelSlip = wheel.slipRatio;
                 float slipOpt = pS.vehicleModel.absSlipOpt;
                 float slipTol = pS.vehicleModel.absSlipTol;
-                float pressureDropRate = pS.vehicleModel.absPressureDropRate;
-                float pressureRiseRate = pS.vehicleModel.absPressureRiseRate;
 
-                if (Mathf.Abs(wheelSlip - slipOpt) > slipTol && brakePressure > 0f)
+                if (Mathf.Abs(wheelSlip) - slipOpt > slipTol && brakePressure > 0f)
                 {
-                    // Reduce brake pressure
-                    brakePressure -= pressureDropRate;
-                    brakePressure = Mathf.Max(brakePressure, 0f);
-                }
-                else
-                {
-                    // Increase brake pressure
-                    brakePressure += pressureRiseRate * Time.fixedDeltaTime;
-                    brakePressure = Mathf.Min(brakePressure, pS.brakePressure);
+                    // Debug.Log("ABS activated");
+                    brakePressure = 0f;
                 }
             }
             float brakeTorque = pS.brakePadCount * pS.brakeFrictionCoefficient * brakePressure * (pS.brakePistonArea * 0.1f) * pS.brakeRotorRadius;

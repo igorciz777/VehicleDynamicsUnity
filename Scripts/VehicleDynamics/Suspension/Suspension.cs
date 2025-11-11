@@ -112,7 +112,7 @@ namespace VehicleDynamics
         private float trackWidth; // Calculated from wheel hub positions
         private float distToCOM;  // Distance from COM to suspension
 
-        void Awake()
+        public void Init()
         {
             // Get vehicle body
             vehicleBody = GetComponentInParent<Rigidbody>();
@@ -123,11 +123,10 @@ namespace VehicleDynamics
             // Setup hubs
             leftWheelHub = leftWheelHubMount.GetComponent<Hub>();
             rightWheelHub = rightWheelHubMount.GetComponent<Hub>();
+            leftWheelHub.Init(this);
+            rightWheelHub.Init(this);
             Debug.Assert(leftWheelHub != null, "Hub component not found on leftWheelHubMount GameObject.");
             Debug.Assert(rightWheelHub != null, "Hub component not found on rightWheelHubMount GameObject.");
-        }
-        void Start()
-        {
             if (suspensionType != SuspensionType.SolidAxle)
             {
                 // Left side joints
@@ -270,9 +269,6 @@ namespace VehicleDynamics
         }
         public void Step(float dt)
         {
-            leftWheelHub.Step(dt);
-            rightWheelHub.Step(dt);
-
             // Update strut params (debug)
             // leftStrut.SetSpringParameters(springLength, springStiffness);
             // rightStrut.SetSpringParameters(springLength, springStiffness);
@@ -356,6 +352,9 @@ namespace VehicleDynamics
                 leftStrut.SetSteeringAngle(leftWheelHub.toeAngle);
                 rightStrut.SetSteeringAngle(rightWheelHub.toeAngle);
             }
+
+            leftWheelHub.Step(dt);
+            rightWheelHub.Step(dt);
         }
 
         public void PostDrivetrainStep(float dt)
@@ -369,8 +368,8 @@ namespace VehicleDynamics
             rightWheelHub.ApplyBrakePressure(brakeInput * brakePressure);
             if(handbrakePressure > 0f)
             {
-                leftWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure);
-                rightWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure);
+                leftWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure, true);
+                rightWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure, true);
             }
         }
         [ContextMenu("Find Geometry Objects")]
