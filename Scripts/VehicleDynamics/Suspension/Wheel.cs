@@ -54,6 +54,8 @@ namespace VehicleDynamics
 
         // Force cap
         private const float maxForce = 600000f;
+        // Camber angle limit
+        private const float radLimit = Mathf.PI / 6f;
 
         public Tire tireModel;
         private TireInput tireInput;
@@ -210,6 +212,8 @@ namespace VehicleDynamics
             Vector3 wheelSpinAxis = hub.rightSided ? -transform.right : transform.right;
             float theta = Mathf.Acos(Vector3.Dot(contactNormal, wheelSpinAxis));
             tireContactCamberAngle = (Mathf.PI / 2f) - theta;
+            // Limit camber angle (above 30 degrees goes unstable)
+            tireContactCamberAngle = Mathf.Clamp(tireContactCamberAngle, -radLimit, radLimit);
             // Set class-wheel state
             wheelEffectiveRadius = effectiveRadius;
             wheelLoadedRadius = loadedRadius;

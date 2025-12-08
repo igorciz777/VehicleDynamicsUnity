@@ -13,13 +13,14 @@ namespace VehicleDynamics
         public PlotView longitudinalPlotView;
         public PlotView lateralPlotView;
 
-        // Sampling / plot options
+        // Sampling / tire input parameters
         public int sampleCount = 256;
         public float slipRange = 0.25f; // +/- kappa range for longitudinal
         public float angleRangeDeg = 15f; // +/- alpha range for lateral (degrees)
         public float Fz = 4000f; // vertical load [N]
         public float Fz0 = 4000f; // nominal load [N]
         public float r0 = 0.33f; // wheel radius [m]
+        public float camber = 0f; // camber angle [degrees]
         public Vector2 mu = new Vector2(1f, 1f); // friction multipliers (longitudinal, lateral)
 
         // UI elements
@@ -29,6 +30,7 @@ namespace VehicleDynamics
         void Start()
         {
             CreateEditFields();
+            CreateTireInputFields();
         }
         void Update()
         {
@@ -36,12 +38,13 @@ namespace VehicleDynamics
         }
         public void CreateEditFields()
         {
-            foreach (Transform child in inputPanel.transform)
+            // Clear parameter panel (was incorrectly clearing inputPanel before)
+            foreach (Transform child in parameterPanel.transform)
             {
                 Destroy(child.gameObject);
             }
             var fields = tireData.GetType().GetFields();
-            float yPos = 0f;
+            float yPos = 2400f;
             foreach (var field in fields)
             {
                 GameObject inputFieldObj = Instantiate(textInputFieldPrefab, parameterPanel.transform);
@@ -69,6 +72,75 @@ namespace VehicleDynamics
                 });
             }
         }
+
+        public void CreateTireInputFields()
+        {
+            // Clear input panel
+            foreach (Transform child in inputPanel.transform)
+            {
+                Destroy(child.gameObject);
+            }
+
+            // Helper to create a labeled input and wire parsing
+            void CreateField(string labelText, string defaultText, System.Action<string> onEndEdit)
+            {
+                GameObject inputFieldObj = Instantiate(textInputFieldPrefab, inputPanel.transform);
+                GameObject titleObj = inputFieldObj.transform.Find("Title").gameObject;
+                TMP_InputField inputField = inputFieldObj.GetComponentInChildren<TMP_InputField>();
+                TextMeshProUGUI label = titleObj.GetComponent<TextMeshProUGUI>();
+                RectTransform rt = inputFieldObj.GetComponent<RectTransform>();
+                rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, -((rt.sizeDelta.y + 5f) * inputPanel.transform.childCount));
+
+                inputFieldObj.name = labelText;
+                label.text = labelText;
+                inputField.text = defaultText;
+
+                // remove any existing listeners to avoid duplicates (safety)
+                inputField.onEndEdit.RemoveAllListeners();
+                inputField.onEndEdit.AddListener(value =>
+                {
+                    onEndEdit(value);
+                    RefreshPlot();
+                });
+            }
+
+            CreateField("Fz", Fz.ToString(), value =>
+            {
+                if (float.TryParse(value, out float v)) Fz = v;
+                else Debug.LogWarning($"Invalid Fz: {value}");
+            });
+
+            CreateField("Fz0", Fz0.ToString(), value =>
+            {
+                if (float.TryParse(value, out float v)) Fz0 = v;
+                else Debug.LogWarning($"Invalid Fz0: {value}");
+            });
+
+            CreateField("r0", r0.ToString(), value =>
+            {
+                if (float.TryParse(value, out float v)) r0 = v;
+                else Debug.LogWarning($"Invalid r0: {value}");
+            });
+
+            CreateField("mu_x", mu.x.ToString(), value =>
+            {
+                if (float.TryParse(value, out float v)) mu.x = v;
+                else Debug.LogWarning($"Invalid mu_x: {value}");
+            });
+
+            CreateField("mu_y", mu.y.ToString(), value =>
+            {
+                if (float.TryParse(value, out float v)) mu.y = v;
+                else Debug.LogWarning($"Invalid mu_y: {value}");
+            });
+
+            CreateField("camber", camber.ToString(), value =>
+            {
+                if (float.TryParse(value, out float v)) camber = v;
+                else Debug.LogWarning($"Invalid camber: {value}");
+            });
+        }
+
         public void RefreshPlot()
         {
             if (longitudinalPlotView == null) { Debug.LogWarning("LongitudinalPlotView not assigned."); return; }
@@ -92,7 +164,7 @@ namespace VehicleDynamics
                     kap,
                     0f,
                     Fz,
-                    0f,
+                    camber * Mathf.Deg2Rad,
                     Fz0,
                     r0,
                     r0,
@@ -124,7 +196,7 @@ namespace VehicleDynamics
                     0f,
                     alph,
                     Fz,
-                    0f,
+                    camber * Mathf.Deg2Rad,
                     Fz0,
                     r0,
                     r0,

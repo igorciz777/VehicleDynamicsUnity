@@ -1044,38 +1044,6 @@ MonoBehaviour:
     m_Interactions: 
     m_SingletonActionBindings:
     - m_Name: 
-      m_Id: aeeba952-2228-450d-97b7-f08ab11669af
-      m_Path: <DI_Thrustmaster T300RS Racing Wheel>/X
-      m_Interactions: 
-      m_Processors: CenterAxis
-      m_Groups: 
-      m_Action: Steering
-      m_Flags: 0
-    - m_Name: 1D Axis
-      m_Id: 595528b3-a473-46f2-a8e6-bc00ef56f3db
-      m_Path: 1DAxis
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Steering
-      m_Flags: 4
-    - m_Name: negative
-      m_Id: 21565392-fc79-46b4-b3b0-0ed4e073aedc
-      m_Path: <Keyboard>/a
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Steering
-      m_Flags: 8
-    - m_Name: positive
-      m_Id: 6ea758a8-2cd5-4253-b85f-f14f8f3e9527
-      m_Path: <Keyboard>/d
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Steering
-      m_Flags: 8
-    - m_Name: 
       m_Id: 9fc76223-86f6-4697-853f-0514b5f2ec8f
       m_Path: <Mouse>/position/x
       m_Interactions: 
@@ -1092,14 +1060,6 @@ MonoBehaviour:
     m_Processors: 
     m_Interactions: 
     m_SingletonActionBindings:
-    - m_Name: 
-      m_Id: c1fee331-3ac6-447d-8bf1-3202d3778e4d
-      m_Path: <DI_Thrustmaster T300RS Racing Wheel>/RZ
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Throttle
-      m_Flags: 0
     - m_Name: 
       m_Id: ed2b3410-c850-402e-a4b3-b0a4eebaa584
       m_Path: <Keyboard>/w
@@ -1141,14 +1101,6 @@ MonoBehaviour:
       m_Groups: 
       m_Action: Brake
       m_Flags: 0
-    - m_Name: 
-      m_Id: d422c5f3-1bb2-4ccd-b1ab-c8a42f941f80
-      m_Path: <DI_TK Customs Loadcell>/U
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Brake
-      m_Flags: 0
     m_Flags: 0
   clutchAction:
     m_Name: Clutch
@@ -1158,14 +1110,6 @@ MonoBehaviour:
     m_Processors: 
     m_Interactions: 
     m_SingletonActionBindings:
-    - m_Name: 
-      m_Id: 2a7def2d-31e2-4fbc-9732-3766b75421b8
-      m_Path: <DI_Thrustmaster T300RS Racing Wheel>/U
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Clutch
-      m_Flags: 0
     - m_Name: 
       m_Id: b745a9ad-273c-491f-bc77-92d53682c4e3
       m_Path: <Keyboard>/c
@@ -1201,14 +1145,6 @@ MonoBehaviour:
     m_Interactions: 
     m_SingletonActionBindings:
     - m_Name: 
-      m_Id: 44f5293f-c85b-41cb-b63e-660c6f0b6d0e
-      m_Path: <DI_Thrustmaster T300RS Racing Wheel>/Button001
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Shift Up
-      m_Flags: 0
-    - m_Name: 
       m_Id: 9046b9f1-a0c0-4238-ac3d-b23f86d345fb
       m_Path: <Keyboard>/e
       m_Interactions: 
@@ -1225,14 +1161,6 @@ MonoBehaviour:
     m_Processors: 
     m_Interactions: 
     m_SingletonActionBindings:
-    - m_Name: 
-      m_Id: e16e0000-55a3-4ee8-8832-c0b5f61653bb
-      m_Path: <DI_Thrustmaster T300RS Racing Wheel>/Button000
-      m_Interactions: 
-      m_Processors: 
-      m_Groups: 
-      m_Action: Shift Down
-      m_Flags: 0
     - m_Name: 
       m_Id: 8cf2fd09-869d-441e-8a31-3eadadd44c8f
       m_Path: <Keyboard>/q
@@ -2353,7 +2281,7 @@ MonoBehaviour:
   leftWheelHubMount: {fileID: 7879795580754208863}
   rightWheelHubMount: {fileID: 3270551596403164444}
   springLength: 0.15
-  springStiffness: 36500
+  springStiffness: 39500
   bumpStopLength: 0.05
   bumpStopStiffness: 60000
   bumpStopBumpDamping: 2000
@@ -3709,7 +3637,7 @@ MonoBehaviour:
   leftWheelHubMount: {fileID: 8569788731101244321}
   rightWheelHubMount: {fileID: 9104546612135921015}
   springLength: 0.2
-  springStiffness: 32500
+  springStiffness: 35500
   bumpStopLength: 0.1
   bumpStopStiffness: 60000
   bumpStopBumpDamping: 2000
