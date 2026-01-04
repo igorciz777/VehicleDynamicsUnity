@@ -31,8 +31,9 @@ namespace VehicleDynamics
         private Vector3 springHubAnchor;
         private readonly float maxForce;
         private float springCompression;
-        private float springRestLength;
         private float hubToSpringAnchorDistance;
+        private const float damperDeadzone = 0.01f;
+        private const float lowSpeedDamping = 1000f;
 
         public Strut(
             Rigidbody chassisBody,
@@ -118,7 +119,12 @@ namespace VehicleDynamics
 
             // Damper force
             float damperForce;
-            if (damperVelocity > 0f) // Bump
+            float absVel = Mathf.Abs(damperVelocity);
+            if (absVel < damperDeadzone)
+            {
+                damperForce = damperVelocity * lowSpeedDamping;
+            }
+            else if (damperVelocity > 0f) // Bump
             {
                 if (damperVelocity > fastBumpThreshold)
                 {

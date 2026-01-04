@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class SmoothFollow2 : MonoBehaviour
+public class SmoothFollow : MonoBehaviour
 {
     public Transform target;
     public float distance = 3.0f;
@@ -32,6 +32,3 @@ public class SmoothFollow2 : MonoBehaviour
         else transform.LookAt(target, target.up);
     }
 }
-//
-//http://wiki.unity3d.com/index.php/SmoothFollow2
-//

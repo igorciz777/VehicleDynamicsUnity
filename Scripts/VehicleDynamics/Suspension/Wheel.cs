@@ -1,3 +1,4 @@
+using UnityEditor;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -38,6 +39,7 @@ namespace VehicleDynamics
         [SerializeField] private float normalLoad = 0f; // Fz
         [SerializeField] private float wheelLoadedRadius = 0f;
         [SerializeField] private float wheelEffectiveRadius = 0f;
+        public Vector4 tireForces = Vector4.zero;
 
         [Header("References")]
         private Hub hub;
@@ -249,7 +251,7 @@ namespace VehicleDynamics
                 degressiveFriction
             );
             // Get tire forces
-            Vector4 tireForces = tireModel.GetForcesAndTorque(ref tireInput);
+            tireForces = tireModel.GetForcesAndTorque(ref tireInput);
             // roadForce in world space projected on plane of contact normal
             Vector3 roadForce =
                 tireForces.x * Vector3.ProjectOnPlane(transform.forward, contactNormal).normalized +
@@ -472,7 +474,10 @@ namespace VehicleDynamics
                 Gizmos.DrawSphere(ray.origin + ray.direction * rayLength, rayRadius);
             }
         }
-
+        public Vector3 GetContactPoint()
+        {
+            return hitPoint;
+        }
         public Vector3 GetContactForce()
         {
             if (isGrounded)
@@ -484,6 +489,10 @@ namespace VehicleDynamics
         public float GetAlignmentTorque()
         {
             return alignmentTorque;
+        }
+        public Vector2 GetTireForces()
+        {
+            return new Vector2(tireForces.x, tireForces.z);
         }
     }
 }

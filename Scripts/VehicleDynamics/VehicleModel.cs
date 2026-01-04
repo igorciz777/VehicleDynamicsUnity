@@ -20,7 +20,8 @@ namespace VehicleDynamics
         public bool shiftUp = false;
         public bool shiftDown = false;
         [Header("FFB")]
-        public float alignmentTorque = 0f;
+        public float tireAlignTorque = 0f;
+        public float steeringArmTorque = 0f;
         [Header("Vehicle Parameters")]
         public float steeringWheelMaxAngle = 1080f;
         public float userWheelMaxAngle = 900f;
@@ -118,16 +119,20 @@ namespace VehicleDynamics
             float dt = Time.fixedDeltaTime;
 
             float steeringWheelInput = Mathf.Clamp(steeringInput * (userWheelMaxAngle / steeringWheelMaxAngle), -1f, 1f);
-            alignmentTorque = 0f;
+            tireAlignTorque = 0f;
+            steeringArmTorque = 0f;
             foreach (var suspension in carSuspension)
             {
                 if (suspension != null)
                 {
                     // Set steering input
-                    suspension.steeringInput = steeringWheelInput;
+                    if(suspension.steerable){
+                        suspension.steeringInput = steeringWheelInput;
+                        tireAlignTorque += suspension.GetTireAlignmentTorque();
+                        steeringArmTorque += suspension.GetSteeringArmTorque();
+                    }
                     // Apply braking torque
                     suspension.SetBrakeInput(brakeInput);
-                    alignmentTorque += suspension.GetAlignmentTorqueSum();
 
                     suspension.Step(dt);
                 }
@@ -153,8 +158,6 @@ namespace VehicleDynamics
             {
                 // Rotate steering wheel around its forward axis
                 float steeringAngle = steeringWheelInput * steeringWheelMaxAngle * 0.5f;
-                // Vector3 rotationAxis = visualSteeringWheel.transform.forward;
-                // visualSteeringWheel.transform.RotateAround(visualSteeringWheel.transform.position, rotationAxis, steeringAngle - visualSteeringWheel.transform.localEulerAngles.z);
                 visualSteeringWheel.transform.localEulerAngles = new Vector3(0f, 0f, steeringAngle);
             }
 
@@ -173,27 +176,6 @@ namespace VehicleDynamics
             Gizmos.color = Color.red;
             Vector3 comWorld = transform.TransformPoint(centerOfMass);
             Gizmos.DrawWireSphere(comWorld, 0.1f);
-        }
-
-
-        public Vector3 GetContactForce()
-        {
-            Vector3 totalForce = Vector3.zero;
-            foreach (var suspension in carSuspension)
-            {
-                totalForce += suspension.GetContactForceSum();
-            }
-            return totalForce;
-        }
-
-        public Vector3 GetLeverArm()
-        {
-            Vector3 totalLeverArm = Vector3.zero;
-            foreach (var suspension in carSuspension)
-            {
-                totalLeverArm += suspension.GetLeverArmSum();
-            }
-            return totalLeverArm;
         }
     }
 }

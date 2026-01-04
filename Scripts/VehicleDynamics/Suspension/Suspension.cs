@@ -112,6 +112,9 @@ namespace VehicleDynamics
         private float trackWidth; // Calculated from wheel hub positions
         private float distToCOM;  // Distance from COM to suspension
 
+        [SerializeField] private float leftSuspensionTrail;
+        [SerializeField] private float rightSuspensionTrail;
+
         public void Init()
         {
             // Get vehicle body
@@ -355,6 +358,37 @@ namespace VehicleDynamics
 
             leftWheelHub.Step(dt);
             rightWheelHub.Step(dt);
+
+            // Suspension trail
+            if (leftWheelHub.GetWheel().isGrounded)
+            {
+                Vector3 chassisAnchor = vehicleBody.transform.InverseTransformPoint(leftStrut.GetStrutChassisAnchor());
+                Vector3 hubAnchor = vehicleBody.transform.InverseTransformPoint(leftStrut.GetStrutHubAnchor());
+                Vector3 contactPoint = vehicleBody.transform.InverseTransformPoint(leftWheelHub.GetWheel().GetContactPoint());
+
+                leftSuspensionTrail = (chassisAnchor.z - hubAnchor.z) / (chassisAnchor.y - hubAnchor.y);
+                leftSuspensionTrail *= hubAnchor.y - contactPoint.y;
+                leftSuspensionTrail += contactPoint.z - hubAnchor.z;
+            }
+            else
+            {
+                leftSuspensionTrail = 0f;
+            }
+
+            if (rightWheelHub.GetWheel().isGrounded)
+            {
+                Vector3 chassisAnchor = vehicleBody.transform.InverseTransformPoint(rightStrut.GetStrutChassisAnchor());
+                Vector3 hubAnchor = vehicleBody.transform.InverseTransformPoint(rightStrut.GetStrutHubAnchor());
+                Vector3 contactPoint = vehicleBody.transform.InverseTransformPoint(rightWheelHub.GetWheel().GetContactPoint());
+
+                rightSuspensionTrail = (chassisAnchor.z - hubAnchor.z) / (chassisAnchor.y - hubAnchor.y);
+                rightSuspensionTrail *= hubAnchor.y - contactPoint.y;
+                rightSuspensionTrail += contactPoint.z - hubAnchor.z;
+            }
+            else
+            {
+                rightSuspensionTrail = 0f;
+            }
         }
 
         public void PostDrivetrainStep(float dt)
@@ -641,23 +675,16 @@ namespace VehicleDynamics
         {
             return distToCOM;
         }
-        public float GetAlignmentTorqueSum()
+        public float GetTireAlignmentTorque()
         {
-            float leftTorque = leftWheelHub.GetWheel().GetAlignmentTorque();
-            float rightTorque = rightWheelHub.GetWheel().GetAlignmentTorque();
-            return leftTorque + rightTorque;
+            float torqueLeft = leftWheelHub.GetWheel().GetAlignmentTorque();
+            float torqueRight = rightWheelHub.GetWheel().GetAlignmentTorque(); 
+            return torqueLeft + torqueRight;
         }
-
-        public Vector3 GetContactForceSum()
-        {
-            return leftWheelHub.GetWheel().GetContactForce() + rightWheelHub.GetWheel().GetContactForce();
-        }
-
-        public Vector3 GetLeverArmSum()
-        {
-            Vector3 leftLeverArm = leftWheelHub.transform.position - vehicleBody.worldCenterOfMass;
-            Vector3 rightLeverArm = rightWheelHub.transform.position - vehicleBody.worldCenterOfMass;
-            return leftLeverArm + rightLeverArm;
+        public float GetSteeringArmTorque(){
+            float torqueLeft = leftSuspensionTrail * leftWheelHub.GetWheel().GetTireForces().y;
+            float torqueRight = rightSuspensionTrail * rightWheelHub.GetWheel().GetTireForces().y;
+            return torqueLeft + torqueRight;
         }
 
         public (Strut,Strut) GetStruts()

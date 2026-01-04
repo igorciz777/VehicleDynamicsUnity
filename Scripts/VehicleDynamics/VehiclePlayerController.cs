@@ -45,12 +45,10 @@ namespace VehicleDynamics
         [Range(-10000f, 10000f)] public int frictionMagnitude = 2000;
 
         [Header("Advanced FFB Settings")]
-        public float alignTorqueScale = 1.0f;
-        public float scrubTorqueScale = 0.5f;
-        public float geometryTorqueScale = 1.0f;
+        public float tireAlignTorqueScale = 1.0f;
+        public float steeringArmTorqueScale = 1.0f;
         public float dampingCoefficient = 0.1f;
         public float inertiaCoefficient = 0.05f;
-        public float maxFFBTorque = 10000f;
 
         private float lastSteeringAxis = 0f;
 
@@ -143,8 +141,7 @@ namespace VehicleDynamics
                 .Select(control => control.device)
                 .OfType<DirectInputDevice>()
                 .Where(device => device.description.capabilities.Contains("\"FFBCapable\":true"))
-                .Where(device => DIManager.Attach(device.description.serial))
-                .FirstOrDefault();
+                .FirstOrDefault(device => DIManager.Attach(device.description.serial));
 
             if (ffbDevice != null)
             {
@@ -163,13 +160,12 @@ namespace VehicleDynamics
         {
             string serial = ffbDevice.description.serial;
 
-            float alignTorque = vehicleModel.alignmentTorque * alignTorqueScale;
-            float geometryTorque = CalculateGeometryTorque() * geometryTorqueScale;
+            float alignTorque = vehicleModel.tireAlignTorque * tireAlignTorqueScale;
+            alignTorque += vehicleModel.steeringArmTorque * steeringArmTorqueScale;
             float dampingTorque = -dampingCoefficient * steeringAxis;
             float inertiaTorque = -inertiaCoefficient * (steeringAxis - lastSteeringAxis) / Time.deltaTime;
 
-            float totalTorque = alignTorque + geometryTorque + dampingTorque + inertiaTorque;
-            totalTorque = Mathf.Clamp(totalTorque, -maxFFBTorque, maxFFBTorque);
+            float totalTorque = alignTorque + dampingTorque + inertiaTorque;
 
             if (constantForceEnabled)
             {
@@ -187,15 +183,6 @@ namespace VehicleDynamics
             }
 
             lastSteeringAxis = steeringAxis;
-        }
-
-        private float CalculateGeometryTorque()
-        {
-            // Approximate geometry torque using suspension forces and steering axis
-            Vector3 contactForce = vehicleModel.GetContactForce();
-            Vector3 leverArm = vehicleModel.GetLeverArm();
-            Vector3 torque = Vector3.Cross(leverArm, contactForce);
-            return Vector3.Dot(torque, transform.up); // Project onto steering axis
         }
 
         private void OnDestroy()
