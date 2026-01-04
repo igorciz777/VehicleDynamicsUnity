@@ -261,7 +261,7 @@ namespace VehicleDynamics
             if (Mathf.Abs(verticalForce) > Mathf.Epsilon)
                 hubBody.AddForceAtPosition(verticalForce * contactNormal, contactPoint, ForceMode.Force);
 
-            if(roadForce.sqrMagnitude > Mathf.Epsilon)
+            if (roadForce.sqrMagnitude > Mathf.Epsilon)
                 hubBody.AddForceAtPosition(roadForce, contactPoint, ForceMode.Force);
 
             // Apply aligning torque
@@ -320,9 +320,9 @@ namespace VehicleDynamics
 
             // Reset wheelTorque
             wheelTorque = 0f;
+            brakeTorque = 0f;
         }
         // Calculate longitudinal slip / slip ratio κ
-        // TODO: fix low speed oscillations
         private float CalculateSlipRatio(float slipAngle = 0f)
         {
             float slipEPS = 0.01f;
@@ -338,7 +338,7 @@ namespace VehicleDynamics
             // Reduce sensitivity at low speeds
             if (vel < 10f) vel = 10f;
 
-            if(vehicleBody.linearVelocity.magnitude < 0.5f)
+            if (vehicleBody.linearVelocity.magnitude < 0.5f)
             {
                 slipRatio = (wheelAngularVelocity * wheelEffectiveRadius - wheelLongitudalVelocity) / vel;
             }
@@ -346,47 +346,27 @@ namespace VehicleDynamics
             {
                 slipRatio = (wheelAngularVelocity * wheelEffectiveRadius - wheelLongitudalVelocity * Mathf.Cos(slipAngle)) / vel;
             }
+
             slipRatio = Mathf.Clamp(slipRatio, -5f, 5f);
             return slipRatio;
         }
 
         // Calculate slip angle α
-        // TODO: fix low speed oscillations
         private float CalculateSlipAngle(float dt)
         {
             float slipEPS = 0.01f;
-
-            float yawRate = vehicleBody.angularVelocity.y;
-
-            // Wong method
-            float denominator = Mathf.Abs(wheelLongitudalVelocity) +
-                                hub.GetSuspension().GetTrackWidth() * 0.5f * Mathf.Abs(yawRate) +
-                                Mathf.Epsilon;
-
-            // if (Mathf.Abs(denominator) < slipEPS)
-            // {
-            //     denominator = slipEPS;
-            // }
-
-            float slipAngle = (hub.GetSuspension().GetDistanceToCOM() * yawRate + wheelLateralVelocity) / denominator;
+            float Vx = Mathf.Max(Mathf.Abs(wheelLongitudalVelocity), slipEPS);
+            float slipAngle = Mathf.Atan2(wheelLateralVelocity, Vx);
 
             if (tireFrictionModel == TireFrictionModel.MF_Simplified)
                 slipAngle = -slipAngle;
 
-            float alpha_c = Mathf.Atan(slipAngle);
-
-            // if(vehicleBody.linearVelocity.magnitude < 8.3f)
-            // {
-            //     return alpha_c;
-            // }
-
             // Relaxation length model (slip angle lag)
-            float Vx = Mathf.Max(Mathf.Abs(wheelLongitudalVelocity), slipEPS);
+            float alpha_c = Mathf.Atan(slipAngle);
             float tau = hub.tireRelaxationLength / Vx;
 
             // Discrete integration (first-order lag)
             float alpha_l = lastSlipAngleLagged + dt / tau * (alpha_c - lastSlipAngleLagged);
-
             lastSlipAngleLagged = alpha_l;
 
             // Lerp with speed to reduce oscillations at low speed
@@ -401,33 +381,28 @@ namespace VehicleDynamics
         }
         public void ApplyBrakeTorque(float torque)
         {
-            brakeTorque = torque;
+            brakeTorque += torque;
         }
+        private void UpdateTireSqueal(AudioSource squealSource, float slipValue, float slipThreshold, float maxSlip, float velocity, bool isGrounded)
+        {
+            bool isActive = Mathf.Abs(slipValue) > slipThreshold && isGrounded;
+            float slipNorm = Mathf.InverseLerp(slipThreshold, maxSlip, Mathf.Abs(slipValue));
+            float velocityNorm = Mathf.InverseLerp(0f, 10f, Mathf.Abs(velocity));
+            float volume = Mathf.Clamp(slipNorm * velocityNorm, 0, hub.maxSquealVolume);
+
+            squealSource.volume = volume;
+            squealSource.pitch = Mathf.Lerp(hub.minSquealPitch, hub.maxSquealPitch, slipNorm * velocityNorm);
+
+            if (isActive && !squealSource.isPlaying)
+                squealSource.Play();
+            else if (!isActive && squealSource.isPlaying)
+                squealSource.Stop();
+        }
+
         void UpdateTireSqueal()
         {
-            // Longitudinal slip squeal
-            bool longSlipActive = Mathf.Abs(slipRatio) > hub.slipRatioThreshold && isGrounded;
-            float longSlipNorm = Mathf.InverseLerp(hub.slipRatioThreshold, 1f, Mathf.Abs(slipRatio));
-            float longVelocityNorm = Mathf.InverseLerp(0f, 10f, Mathf.Abs(wheelAngularVelocity)); // Normalize angular velocity
-            float longVolume = Mathf.Clamp(longSlipNorm * longVelocityNorm, 0, hub.maxSquealVolume);
-            hub.slipRatioSquealSource.volume = longVolume;
-            hub.slipRatioSquealSource.pitch = Mathf.Lerp(hub.minSquealPitch, hub.maxSquealPitch, longSlipNorm * longVelocityNorm);
-            if (longSlipActive && !hub.slipRatioSquealSource.isPlaying)
-            hub.slipRatioSquealSource.Play();
-            else if (!longSlipActive && hub.slipRatioSquealSource.isPlaying)
-            hub.slipRatioSquealSource.Stop();
-
-            // Lateral slip squeal
-            bool latSlipActive = Mathf.Abs(slipAngle * Mathf.Rad2Deg) > hub.slipAngleThreshold && isGrounded;
-            float latSlipNorm = Mathf.InverseLerp(hub.slipAngleThreshold, 15f, Mathf.Abs(slipAngle * Mathf.Rad2Deg));
-            float latVelocityNorm = Mathf.InverseLerp(0f, 10f, Mathf.Abs(vehicleBody.linearVelocity.magnitude)); // Normalize angular velocity
-            float latVolume = Mathf.Clamp(latSlipNorm * latVelocityNorm, 0, hub.maxSquealVolume);
-            hub.slipAngleSquealSource.volume = latVolume;
-            hub.slipAngleSquealSource.pitch = Mathf.Lerp(hub.minSquealPitch, hub.maxSquealPitch, latSlipNorm * latVelocityNorm);
-            if (latSlipActive && !hub.slipAngleSquealSource.isPlaying)
-            hub.slipAngleSquealSource.Play();
-            else if (!latSlipActive && hub.slipAngleSquealSource.isPlaying)
-            hub.slipAngleSquealSource.Stop();
+            UpdateTireSqueal(hub.slipRatioSquealSource, slipRatio, hub.slipRatioThreshold, 1f, wheelAngularVelocity, isGrounded);
+            UpdateTireSqueal(hub.slipAngleSquealSource, slipAngle * Mathf.Rad2Deg, hub.slipAngleThreshold, 15f, vehicleBody.linearVelocity.magnitude, isGrounded);
         }
 
         private void DrawTireRay(Ray ray)
@@ -477,14 +452,6 @@ namespace VehicleDynamics
         public Vector3 GetContactPoint()
         {
             return hitPoint;
-        }
-        public Vector3 GetContactForce()
-        {
-            if (isGrounded)
-            {
-                return normalLoad * -transform.up; // Approximation of vertical force
-            }
-            return Vector3.zero;
         }
         public float GetAlignmentTorque()
         {

@@ -179,7 +179,6 @@ namespace VehicleDynamics
 
                 if (Mathf.Abs(wheelSlip) - slipOpt > slipTol && brakePressure > 0f)
                 {
-                    // Debug.Log("ABS activated");
                     brakePressure = 0f;
                 }
             }

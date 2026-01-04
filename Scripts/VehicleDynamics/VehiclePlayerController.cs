@@ -171,15 +171,27 @@ namespace VehicleDynamics
             {
                 DIManager.UpdateConstantForceSimple(serial, (int)totalTorque);
             }
+            else
+            {
+                DIManager.UpdateConstantForceSimple(serial, 0);
+            }
 
             if (damperForceEnabled)
             {
                 DIManager.UpdateDamperSimple(serial, damperMagnitude);
             }
+            else
+            {
+                DIManager.UpdateDamperSimple(serial, 0);
+            }
 
             if (frictionForceEnabled)
             {
                 DIManager.UpdateFrictionSimple(serial, frictionMagnitude);
+            }
+            else
+            {
+                DIManager.UpdateFrictionSimple(serial, 0);
             }
 
             lastSteeringAxis = steeringAxis;

@@ -5572,11 +5572,6 @@ MonoBehaviour:
   leftWheelHub: {fileID: 336711177}
   rightWheelHub: {fileID: 1617301251}
   differentialRatio: 3.5
-  lockRatio: 0.25
-  preloadTorque: 50
-  maxLockTorque: 500
-  viscosity: 0.8
-  rampAngle: 45
 --- !u!114 &188814590
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5638,6 +5633,8 @@ MonoBehaviour:
   antirollForce: 0
   drawGizmos: 1
   drawSteeringAxis: 0
+  leftSuspensionTrail: 0
+  rightSuspensionTrail: 0
 --- !u!1 &190099194
 GameObject:
   m_ObjectHideFlags: 0
@@ -41011,6 +41008,8 @@ MonoBehaviour:
   antirollForce: 0
   drawGizmos: 1
   drawSteeringAxis: 0
+  leftSuspensionTrail: 0
+  rightSuspensionTrail: 0
 --- !u!4 &1367828631
 Transform:
   m_ObjectHideFlags: 0
@@ -41056,11 +41055,6 @@ MonoBehaviour:
   leftWheelHub: {fileID: 716346118}
   rightWheelHub: {fileID: 904021694}
   differentialRatio: 3.5
-  lockRatio: 0.25
-  preloadTorque: 50
-  maxLockTorque: 500
-  viscosity: 0.8
-  rampAngle: 45
 --- !u!1 &1369545825
 GameObject:
   m_ObjectHideFlags: 0
@@ -41527,6 +41521,7 @@ MonoBehaviour:
   handbrakeInput: 0
   shiftUp: 0
   shiftDown: 0
+  tireAlignTorque: 0
   steeringArmTorque: 0
   steeringWheelMaxAngle: 1080
   userWheelMaxAngle: 1030
@@ -41696,10 +41691,10 @@ MonoBehaviour:
   damperMagnitude: 100
   frictionForceEnabled: 0
   frictionMagnitude: 2000
-  alignTorqueScale: -10
+  tireAlignTorqueScale: -10
+  steeringArmTorqueScale: -25
   dampingCoefficient: 0.1
   inertiaCoefficient: 0.05
-  maxFFBTorque: 10000
 --- !u!54 &1369725061
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -48135,6 +48130,7 @@ MonoBehaviour:
   handbrakeInput: 0
   shiftUp: 0
   shiftDown: 0
+  tireAlignTorque: 0
   steeringArmTorque: 0
   steeringWheelMaxAngle: 1080
   userWheelMaxAngle: 1030
@@ -48304,10 +48300,10 @@ MonoBehaviour:
   damperMagnitude: 100
   frictionForceEnabled: 0
   frictionMagnitude: 2000
-  alignTorqueScale: -10
+  tireAlignTorqueScale: 1
+  steeringArmTorqueScale: 1
   dampingCoefficient: 0.1
   inertiaCoefficient: 0.05
-  maxFFBTorque: 10000
 --- !u!54 &1547324584
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -51034,11 +51030,6 @@ MonoBehaviour:
   leftWheelHub: {fileID: 1777503263}
   rightWheelHub: {fileID: 184505067}
   differentialRatio: 3.5
-  lockRatio: 0.25
-  preloadTorque: 50
-  maxLockTorque: 500
-  viscosity: 0.8
-  rampAngle: 45
 --- !u!114 &1649271199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51100,6 +51091,8 @@ MonoBehaviour:
   antirollForce: 0
   drawGizmos: 1
   drawSteeringAxis: 0
+  leftSuspensionTrail: 0
+  rightSuspensionTrail: 0
 --- !u!1 &1656930212
 GameObject:
   m_ObjectHideFlags: 0
@@ -55006,6 +54999,8 @@ MonoBehaviour:
   antirollForce: 0
   drawGizmos: 1
   drawSteeringAxis: 0
+  leftSuspensionTrail: 0
+  rightSuspensionTrail: 0
 --- !u!4 &1818472500
 Transform:
   m_ObjectHideFlags: 0
@@ -64574,6 +64569,8 @@ MonoBehaviour:
   antirollForce: 0
   drawGizmos: 1
   drawSteeringAxis: 0
+  leftSuspensionTrail: 0
+  rightSuspensionTrail: 0
 --- !u!114 &668343141856546276
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67823,6 +67820,7 @@ MonoBehaviour:
   handbrakeInput: 0
   shiftUp: 0
   shiftDown: 0
+  tireAlignTorque: 0
   steeringArmTorque: 0
   steeringWheelMaxAngle: 1080
   userWheelMaxAngle: 1030
@@ -67980,6 +67978,8 @@ MonoBehaviour:
   antirollForce: 0
   drawGizmos: 1
   drawSteeringAxis: 0
+  leftSuspensionTrail: 0
+  rightSuspensionTrail: 0
 --- !u!1 &2456144095357551162
 GameObject:
   m_ObjectHideFlags: 0
@@ -68161,11 +68161,6 @@ MonoBehaviour:
   leftWheelHub: {fileID: 2666507835493966590}
   rightWheelHub: {fileID: 6025580454935005}
   differentialRatio: 3.08
-  lockRatio: 0.25
-  preloadTorque: 50
-  maxLockTorque: 500
-  viscosity: 0.8
-  rampAngle: 45
 --- !u!224 &2640481496733362620
 RectTransform:
   m_ObjectHideFlags: 0
@@ -70762,11 +70757,6 @@ MonoBehaviour:
   leftWheelHub: {fileID: 9178783384407339800}
   rightWheelHub: {fileID: 1892293626488917818}
   differentialRatio: 3.5
-  lockRatio: 0.25
-  preloadTorque: 50
-  maxLockTorque: 500
-  viscosity: 0.8
-  rampAngle: 45
 --- !u!224 &4348692519591278396
 RectTransform:
   m_ObjectHideFlags: 0
@@ -71763,10 +71753,10 @@ MonoBehaviour:
   damperMagnitude: 100
   frictionForceEnabled: 0
   frictionMagnitude: 2000
-  alignTorqueScale: -10
+  tireAlignTorqueScale: 1
+  steeringArmTorqueScale: 1
   dampingCoefficient: 0.1
   inertiaCoefficient: 0.05
-  maxFFBTorque: 10000
 --- !u!224 &4695856487503993290
 RectTransform:
   m_ObjectHideFlags: 0
@@ -77608,7 +77598,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!33 &7608382402506957095
 MeshFilter:
   m_ObjectHideFlags: 0

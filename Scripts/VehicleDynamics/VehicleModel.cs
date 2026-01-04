@@ -98,22 +98,7 @@ namespace VehicleDynamics
 
             }
         }
-        /*
-        Execution order:
-        - VehicleModel.FixedUpdate
-            - Suspension.Step
-                - Strut.Step
-                - Hub.Step
-                    - Wheel.Step
-            - Drivetrain.Step
-                - Engine.Step
-                - Differential.GetUpVelocity
-                - Transmission.GetUpVelocity
-                - Clutch.Step
-            - Suspension.PostDrivetrainStep
-                - Hub.PostDrivetrainStep
-                    - Wheel.PostDrivetrainStep
-        */
+
         void FixedUpdate()
         {
             float dt = Time.fixedDeltaTime;
@@ -132,7 +117,7 @@ namespace VehicleDynamics
                         steeringArmTorque += suspension.GetSteeringArmTorque();
                     }
                     // Apply braking torque
-                    suspension.SetBrakeInput(brakeInput);
+                    suspension.SetBrakeInput(brakeInput, handbrakeInput);
 
                     suspension.Step(dt);
                 }

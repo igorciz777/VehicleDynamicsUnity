@@ -90,9 +90,7 @@ namespace VehicleDynamics
         private ConfigurableJoint rightLowerWishboneBall;
         private ConfigurableJoint rightUpperWishboneHinge;
         private ConfigurableJoint rightUpperWishboneBall;
-        // Solid Axle Suspension joints
-        private ConfigurableJoint leftAxleJoint;
-        private ConfigurableJoint rightAxleJoint;
+
         // Struts
         private Strut leftStrut;
         private Strut rightStrut;
@@ -102,7 +100,6 @@ namespace VehicleDynamics
         private GameObject leftUpperWishbone;
         private GameObject rightLowerWishbone;
         private GameObject rightUpperWishbone;
-        private GameObject axleObject;
 
         // WheelHub objects
         private Hub leftWheelHub;
@@ -215,26 +212,11 @@ namespace VehicleDynamics
         }
         public void Step(float dt)
         {
-            // Update strut params (debug)
-            // leftStrut.SetSpringParameters(springLength, springStiffness);
-            // rightStrut.SetSpringParameters(springLength, springStiffness);
-            // leftStrut.SetDamperParameters(bumpStiffness, reboundStiffness, fastBumpStiffness, fastReboundStiffness, fastBumpThreshold, fastReboundThreshold);
-            // rightStrut.SetDamperParameters(bumpStiffness, reboundStiffness, fastBumpStiffness, fastReboundStiffness, fastBumpThreshold, fastReboundThreshold);
-            // leftStrut.SetBumpStopParameters(bumpStopLength, bumpStopStiffness, bumpStopBumpDamping, bumpStopReboundDamping);
-            // rightStrut.SetBumpStopParameters(bumpStopLength, bumpStopStiffness, bumpStopBumpDamping, bumpStopReboundDamping);
-
             leftStrut.Step();
             rightStrut.Step();
 
             if (hasAntirollBar)
             {
-                // float G = 79e9f;           // Pa
-                // float r = 0.01f;           // m
-                // float J = Mathf.PI * Mathf.Pow(r, 4) / 2f;
-                // float a = 0.3f;            // m (drop link length)
-                // float Lr = 1.5f;           // m (distance between wheels)
-                // float arbStiffness = (Lr * G * J) / (a * a); // Units: N·m/rad
-
                 float leftCompression = leftStrut.GetSpringCompression();
                 float rightCompression = rightStrut.GetSpringCompression();
 
@@ -339,16 +321,21 @@ namespace VehicleDynamics
             leftWheelHub.PostDrivetrainStep(dt);
             rightWheelHub.PostDrivetrainStep(dt);
         }
-        public void SetBrakeInput(float brakeInput)
+        public void SetBrakeInput(float brakeInput, float handbrakeInput)
         {
-            leftWheelHub.ApplyBrakePressure(brakeInput * brakePressure);
-            rightWheelHub.ApplyBrakePressure(brakeInput * brakePressure);
-            if (handbrakePressure > 0f)
+            if (brakeInput > 0f)
             {
-                leftWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure, true);
-                rightWheelHub.ApplyBrakePressure(vehicleModel.handbrakeInput * handbrakePressure, true);
+                leftWheelHub.ApplyBrakePressure(brakeInput * brakePressure);
+                rightWheelHub.ApplyBrakePressure(brakeInput * brakePressure);
+            }
+
+            if (handbrakePressure > 0f && handbrakeInput > 0f)
+            {
+                leftWheelHub.ApplyBrakePressure(handbrakeInput * handbrakePressure, true);
+                rightWheelHub.ApplyBrakePressure(handbrakeInput * handbrakePressure, true);
             }
         }
+
         [ContextMenu("Find Geometry Objects")]
         public void FindGameObjects()
         {
