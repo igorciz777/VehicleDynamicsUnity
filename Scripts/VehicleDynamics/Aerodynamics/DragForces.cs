@@ -13,7 +13,7 @@ namespace VehicleDynamics
         private float vehicleYawAngle = 0f;
         private SimulationSettings simSettings;
 
-        void Start()
+        private void Start()
         {
             vehicleBody = GetComponent<Rigidbody>();
             simSettings = Resources.Load<SimulationSettings>("Settings/SimulationSettings");
@@ -21,15 +21,21 @@ namespace VehicleDynamics
             airDensity = simSettings.airDensity;
         }
 
-        void FixedUpdate()
+        private void FixedUpdate()
         {
             if (vehicleBody == null) return;
 
             vehicleVelocity = vehicleBody.linearVelocity.magnitude;
-            vehicleYawAngle = Vector3.Dot(vehicleBody.transform.forward, vehicleBody.linearVelocity.normalized);
+            if (vehicleVelocity < 0.1f) return;
+
+            Vector3 localVelocity = vehicleBody.transform.InverseTransformDirection(vehicleBody.linearVelocity);
+            vehicleYawAngle = Mathf.Atan2(localVelocity.x, Mathf.Abs(localVelocity.z) + 0.1f);
+
+            float yawDragScale = 1f + dragYawCoefficient * vehicleYawAngle * vehicleYawAngle;
+            float effectiveCd = Mathf.Max(0f, dragCoefficient * yawDragScale);
 
             // Calculate drag force
-            Vector3 Fd = 0.5f * airDensity * vehicleVelocity * vehicleVelocity * (dragCoefficient + dragYawCoefficient * vehicleYawAngle) * frontalArea * -vehicleBody.linearVelocity.normalized;
+            Vector3 Fd = 0.5f * airDensity * vehicleVelocity * vehicleVelocity * effectiveCd * frontalArea * -vehicleBody.linearVelocity.normalized;
 
             vehicleBody.AddForce(Fd, ForceMode.Force);
         }
