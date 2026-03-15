@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -18,7 +16,8 @@ namespace VehicleDynamics
         private Vector3 wingAreaVector;
         private float wingArea;
         private SimulationSettings simSettings;
-        void Start()
+
+        private void Start()
         {
             vehicleBody = GetComponentInParent<Rigidbody>();
             wingArea = length * width;
@@ -28,7 +27,7 @@ namespace VehicleDynamics
             airDensity = simSettings.airDensity;
             wingAreaVector = wingNormal * wingArea;
         }
-        void FixedUpdate()
+        private void FixedUpdate()
         {
             if (vehicleBody == null) return;
 
@@ -48,7 +47,7 @@ namespace VehicleDynamics
 
             vehicleBody.AddForceAtPosition(liftForce + dragForce, transform.position, ForceMode.Force);
         }
-        void OnDrawGizmosSelected()
+        private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.cyan;
             Vector3 center = transform.position;

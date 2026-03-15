@@ -52,11 +52,16 @@ namespace VehicleDynamics
             float baseRightTorque = inputTorque * 0.5f + rightCorrection;
             
             float totalTorque = baseLeftTorque + baseRightTorque;
-            if (totalTorque > 0)
+            if (Mathf.Abs(totalTorque) > Mathf.Epsilon)
             {
                 float scale = inputTorque / totalTorque;
                 baseLeftTorque *= scale;
                 baseRightTorque *= scale;
+            }
+            else
+            {
+                baseLeftTorque = inputTorque * 0.5f;
+                baseRightTorque = inputTorque * 0.5f;
             }
             
             return (baseLeftTorque, baseRightTorque);

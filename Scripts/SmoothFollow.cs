@@ -12,9 +12,10 @@ public class SmoothFollow : MonoBehaviour
 
     private void Awake()
     {
-        this.transform.parent = null;
+        transform.parent = null;
     }
-    void FixedUpdate()
+
+    private void FixedUpdate()
     {
         Vector3 wantedPosition;
         if (followBehind)

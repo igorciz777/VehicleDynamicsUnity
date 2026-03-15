@@ -6,7 +6,7 @@ namespace VehicleDynamics
     {
         [Header("Transmission Parameters")]
         public int currentGear = 1;
-        public float[] gearRatios = new float[] { -3.5f, 0f, 3.5f, 2.5f, 1.5f, 1.0f, 0.75f };
+        public float[] gearRatios = { -3.5f, 0f, 3.5f, 2.5f, 1.5f, 1.0f, 0.75f };
         public float transmissionInertia = 0.05f; // kg*m^2
         [Header("Transmission State")]
         public float transmissionAngularVelocity = 0f;
@@ -44,9 +44,6 @@ namespace VehicleDynamics
             if (currentGear > 0)
                 currentGear--;
         }
-        public float GetCurrentGearRatio()
-        {
-            return gearRatios[currentGear];
-        }
+        public float GetCurrentGearRatio() => gearRatios[currentGear];
     }
 }

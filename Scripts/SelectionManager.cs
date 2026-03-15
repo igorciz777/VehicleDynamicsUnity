@@ -7,7 +7,7 @@ public class SelectionManager : MonoBehaviour
 	public int selectedVehicleIndex = 0;
 	public int selectedTrackIndex = 0;
 
-	void Awake()
+	private void Awake()
 	{
 		if (Instance == null)
 		{

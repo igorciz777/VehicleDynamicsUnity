@@ -5,7 +5,7 @@ public class CarSpawner : MonoBehaviour
 	public GameObject[] carPrefabs;
 	public string spawnPointName = "SpawnPoint";
 
-	void Start()
+	private void Start()
 	{
 		var sel = SelectionManager.Instance;
 		if (sel == null)

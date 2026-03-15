@@ -171,34 +171,19 @@ namespace VehicleDynamics
             chassisBody.AddForceAtPosition((springForce + damperForce) * strutDirection, strutChassisAnchor, ForceMode.Force);
         }
         // Getters
-        public Vector3 GetStrutChassisAnchor()
-        {
-            return strutChassisAnchor;
-        }
-        public Vector3 GetStrutHubAnchor()
-        {
-            return strutHubAnchor;
-        }
-        public Vector3 GetSpringChassisAnchor()
-        {
-            return springChassisAnchor;
-        }
-        public Vector3 GetSpringHubAnchor()
-        {
-            return springHubAnchor;
-        }
-        public Vector3 GetStrutDirection()
-        {
-            return strutDirection;
-        }
-        public float GetSpringCompression()
-        {
-            return springCompression;
-        }
-        public ConfigurableJoint GetStrutJoint()
-        {
-            return strutJoint;
-        }
+        public Vector3 GetStrutChassisAnchor() => strutChassisAnchor;
+
+        public Vector3 GetStrutHubAnchor() => strutHubAnchor;
+
+        public Vector3 GetSpringChassisAnchor() => springChassisAnchor;
+
+        public Vector3 GetSpringHubAnchor() => springHubAnchor;
+
+        public Vector3 GetStrutDirection() => strutDirection;
+
+        public float GetSpringCompression() => springCompression;
+
+        public ConfigurableJoint GetStrutJoint() => strutJoint;
         // Setters
         public void SetSpringParameters(float newSpringLength, float newSpringStiffness)
         {

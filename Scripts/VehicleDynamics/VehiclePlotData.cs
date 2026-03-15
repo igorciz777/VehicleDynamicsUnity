@@ -31,12 +31,12 @@ public class VehiclePlotData : MonoBehaviour
     public PlotView FRWheelSlipAnglePlot;
     public PlotView FLCamberAnglePlot;
     public PlotView FRCamberAnglePlot;
-    void Start()
+    private void Start()
     {
         engineRpmPlot.autoScaleY = false;
         engineRpmPlot.manualYRange = new(0f, engine.rpmMax);
     }
-    void Update()
+    private void Update()
     {
         throttlePlot.AddData(vehicleModel.throttleInput);
         brakePlot.AddData(vehicleModel.brakeInput);

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,7 +9,7 @@ namespace VehicleDynamics
         private Terrain terrain;
         public List<TerrainRoadLayer> terrainRoadLayersList = new();
 
-        void Awake()
+        private void Awake()
         {
             if (!TryGetComponent(out terrain))
             {

@@ -27,7 +27,7 @@ public class PlotView : MonoBehaviour
     public TextMeshProUGUI maxYLabel;
     public TextMeshProUGUI minYLabel;
 
-    private Queue<float> dataPoints = new();
+    private readonly Queue<float> dataPoints = new();
     private float lastUpdateTime;
     private float currentValue;
 
@@ -40,7 +40,7 @@ public class PlotView : MonoBehaviour
     private float[] staticXData;
     private float[] staticYData;
 
-    void Start()
+    private void Start()
     {
         InitializeDataBuffer();
         plotTexture = new Texture2D((int)plotSize.x, (int)plotSize.y, TextureFormat.RGBA32, false);
@@ -50,7 +50,7 @@ public class PlotView : MonoBehaviour
         plotImage.texture = plotTexture;
         titleText.text = plotTitle;
     }
-    void Update()
+    private void Update()
     {
         if (Time.time - lastUpdateTime >= updateInterval)
         {

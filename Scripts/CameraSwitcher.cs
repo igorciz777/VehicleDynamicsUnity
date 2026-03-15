@@ -6,7 +6,8 @@ public class CameraSwitcher : MonoBehaviour
     public InputAction cameraSwitchAction;
     public GameObject[] cameras;
     private int currentCameraIndex = 0;
-    void Start()
+
+    private void Start()
     {
         foreach (GameObject cam in cameras)
         {

@@ -565,17 +565,18 @@ MonoBehaviour:
   hubSpacing: 0.02
   camberAdjustment: 3
   toeAdjustment: -0.1
-  brakePressure: 5200
+  brakePressure: 3200
   handbrakePressure: 6000
   brakePadCount: 2
   brakeFrictionCoefficient: 0.7
   brakeRotorRadius: 0.15
   brakePistonArea: 20
   hasAntirollBar: 1
-  antirollBarStiffness: 11000
+  antirollBarStiffness: 150000
   antirollForce: 0
-  drawGizmos: 1
+  drawGizmos: 0
   drawSteeringAxis: 0
+  drawRuntimeDebug: 1
   leftSuspensionTrail: 0
   rightSuspensionTrail: 0
 --- !u!114 &8650029886682530127
@@ -899,6 +900,98 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &1507848719312632036
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5965988447134885549}
+  - component: {fileID: 6070332455625509026}
+  - component: {fileID: 6345242276620293803}
+  m_Layer: 0
+  m_Name: CamObj
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5965988447134885549
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1507848719312632036}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8489645465524113547}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!20 &6070332455625509026
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1507848719312632036}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.1
+  far clip plane: 1000
+  field of view: 65
+  orthographic: 0
+  orthographic size: 5
+  m_Depth: -1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
+  m_TargetEye: 3
+  m_HDR: 1
+  m_AllowMSAA: 1
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!81 &6345242276620293803
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1507848719312632036}
+  m_Enabled: 1
 --- !u!1 &1590096972642697379
 GameObject:
   m_ObjectHideFlags: 0
@@ -992,6 +1085,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bcfc7fed4c7ae44bb491e834c3950cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  useGlobalInputScheme: 0
   vehicleModel: {fileID: 2246471767606957737}
   steeringAxis: 0
   invertSteering: 0
@@ -1005,6 +1099,7 @@ MonoBehaviour:
   invertHandbrake: 0
   shiftUpButton: 0
   shiftDownButton: 0
+  starterButtonHeld: 0
   mouseInput: 1
   steeringAction:
     m_Name: Steering
@@ -1141,6 +1236,23 @@ MonoBehaviour:
       m_Action: Shift Down
       m_Flags: 0
     m_Flags: 0
+  starterAction:
+    m_Name: Starter
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 97b4af19-6da4-48f7-9903-294e93ed2d17
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: b921a4a3-2005-4170-91ac-20da323f47c2
+      m_Path: <Keyboard>/v
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Starter
+      m_Flags: 0
+    m_Flags: 0
   enableFFB: 0
   constantForceEnabled: 1
   constantForceMagnitude: 5000
@@ -1171,6 +1283,7 @@ MonoBehaviour:
   brakeInput: 0
   clutchInput: 0
   handbrakeInput: 0
+  starterHeld: 0
   shiftUp: 0
   shiftDown: 0
   tireAlignTorque: 0
@@ -1222,6 +1335,7 @@ MonoBehaviour:
   powerSplitFront: 0.45
   throttleInput: 0
   clutchInput: 1
+  starterHeld: 0
   vehicleBody: {fileID: 0}
   frontDifferential: {fileID: 6538265189796807391}
   rearDifferential: {fileID: 8650029886682530127}
@@ -1242,6 +1356,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rpmIdle: 800
   rpmMax: 9000
+  starterTorque: 90
+  starterTargetRpmOffset: 50
   hasRevLimiter: 1
   rpmLimiter: 8000
   limiterDuration: 0.1
@@ -1503,7 +1619,7 @@ MonoBehaviour:
   - {fileID: 2423950911374597221}
   - {fileID: 200765565303337037}
   - {fileID: 5611680088749544403}
-  - {fileID: 2058775746445982506}
+  - {fileID: 1507848719312632036}
 --- !u!114 &1416361310380238206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1660,8 +1776,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8489645465524113547}
-  - component: {fileID: 3197632934557121531}
-  - component: {fileID: 3265052508479324319}
   - component: {fileID: 3609394042257314648}
   m_Layer: 0
   m_Name: Camera (3)
@@ -1682,68 +1796,10 @@ Transform:
   m_LocalPosition: {x: 0, y: -1.6100001, z: -3.5299988}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 5965988447134885549}
   m_Father: {fileID: 95507097784341543}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!20 &3197632934557121531
-Camera:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2058775746445982506}
-  m_Enabled: 1
-  serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_projectionMatrixMode: 1
-  m_GateFitMode: 2
-  m_FOVAxisMode: 0
-  m_Iso: 200
-  m_ShutterSpeed: 0.005
-  m_Aperture: 16
-  m_FocusDistance: 10
-  m_FocalLength: 50
-  m_BladeCount: 5
-  m_Curvature: {x: 2, y: 11}
-  m_BarrelClipping: 0.25
-  m_Anamorphism: 0
-  m_SensorSize: {x: 36, y: 24}
-  m_LensShift: {x: 0, y: 0}
-  m_NormalizedViewPortRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  near clip plane: 0.1
-  far clip plane: 1000
-  field of view: 65
-  orthographic: 0
-  orthographic size: 5
-  m_Depth: -1
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 0
-  m_TargetEye: 3
-  m_HDR: 1
-  m_AllowMSAA: 1
-  m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
-  m_StereoConvergence: 10
-  m_StereoSeparation: 0.022
---- !u!81 &3265052508479324319
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2058775746445982506}
-  m_Enabled: 1
 --- !u!114 &3609394042257314648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3495,10 +3551,11 @@ MonoBehaviour:
   brakeRotorRadius: 0.15
   brakePistonArea: 20
   hasAntirollBar: 1
-  antirollBarStiffness: 11000
+  antirollBarStiffness: 210000
   antirollForce: 0
-  drawGizmos: 1
+  drawGizmos: 0
   drawSteeringAxis: 0
+  drawRuntimeDebug: 1
   leftSuspensionTrail: 0
   rightSuspensionTrail: 0
 --- !u!114 &6538265189796807391

@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 
 public class DemoMenu : MonoBehaviour
 {
-    void Start()
+    private void Start()
     {
         if (SelectionManager.Instance == null)
         {
@@ -18,12 +18,12 @@ public class DemoMenu : MonoBehaviour
     public string[] trackSceneNames;
     public Button playButton;
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         if (playButton != null) playButton.onClick.RemoveListener(OnPlay);
     }
 
-    int GetSelectedIndex(Toggle[] toggles)
+    private int GetSelectedIndex(Toggle[] toggles)
     {
         if (toggles == null) return -1;
         for (int i = 0; i < toggles.Length; i++)
@@ -33,7 +33,7 @@ public class DemoMenu : MonoBehaviour
         return -1;
     }
 
-    void OnPlay()
+    private void OnPlay()
     {
         int vehicleIndex = GetSelectedIndex(vehicleToggles);
         int trackIndex = GetSelectedIndex(trackToggles);
