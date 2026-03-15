@@ -23,11 +23,9 @@ namespace VehicleDynamics
         public void Init()
         {
             engagementCurve = new AnimationCurve();
-            engagementCurve.AddKey(0f, 0f);
-            Keyframe middleKey = new(1f - bitingPoint, 1f, 0f, 0f); // Flat tangent
-            engagementCurve.AddKey(middleKey);
-            Keyframe endKey = new(1f, 1f, 0f, 0f); // Flat tangent
-            engagementCurve.AddKey(endKey);
+            engagementCurve.AddKey(new Keyframe(0f, 0f, 0f, 0f));
+            engagementCurve.AddKey(new Keyframe(1f - bitingPoint, 1f, 0f, 0f));
+            engagementCurve.AddKey(new Keyframe(1f, 1f, 0f, 0f));
         }
 
         public void Step(float dt, float clutchInput, float engineAngularVel, float transmissionAngularVel, float gearRatio)
@@ -57,19 +55,26 @@ namespace VehicleDynamics
             float keff = Mathf.Max(0f, clutchStiffness * clutchEngagement);
             float deff = Mathf.Max(0f, clutchDamping * clutchEngagement);
 
-            if (keff > 0f && clutchMaxTorque > 0f)
+            if (clutchStiffness > 0f && clutchMaxTorque > 0f)
             {
-                float thetaMax = Mathf.Abs(clutchMaxTorque) / keff;
+                float thetaMax = Mathf.Abs(clutchMaxTorque) / clutchStiffness;
                 thetac = Mathf.Clamp(thetac, -thetaMax, thetaMax);
             }
 
             // spring + viscous damping torque
             float springTorque = keff * thetac + deff * relOmega;
-            float targetTorque = Mathf.Clamp(springTorque, -Mathf.Abs(clutchMaxTorque), Mathf.Abs(clutchMaxTorque));
+
+            float maxTorque = Mathf.Abs(clutchMaxTorque) * clutchEngagement;
+            float targetTorque = Mathf.Clamp(springTorque, -maxTorque, maxTorque);
 
             clutchTorque = targetTorque;
 
-            // If clutch is fully disengaged no torque transmits and allow spring to relax
+            // Decay thetac when near-locked (|slip| < 5 rad/s ≈ 48 RPM) to prevent
+            // residual ghost torque after a slip event.
+            if (Mathf.Abs(relOmega) < 5f)
+                thetac *= Mathf.Clamp01(1f - 15f * clutchEngagement * dt);
+
+            // clutch is fully disengaged
             if (clutchEngagement <= 1e-3f)
             {
                 clutchTorque = 0f;
