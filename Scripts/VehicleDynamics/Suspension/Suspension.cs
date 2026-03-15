@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -81,6 +82,13 @@ namespace VehicleDynamics
         [Header("Debug Settings")]
         public bool drawGizmos = true;
         public bool drawSteeringAxis = false;
+        [Header("Runtime Debug Visualization")]
+        public bool drawRuntimeDebug = false;
+        private static Material runtimeDebugLineMaterial;
+        private readonly List<RuntimeDebugLine> runtimeDebugLines = new List<RuntimeDebugLine>(256);
+
+        
+
         // Independent Suspension joints
         private ConfigurableJoint leftLowerWishboneHinge;
         private ConfigurableJoint leftLowerWishboneBall;
@@ -108,8 +116,8 @@ namespace VehicleDynamics
         private float trackWidth; // Calculated from wheel hub positions
         private float distToCOM;  // Distance from COM to suspension
 
-        [SerializeField] private float leftSuspensionTrail;
-        [SerializeField] private float rightSuspensionTrail;
+        private float leftSuspensionTrail;
+        private float rightSuspensionTrail;
 
         public void Init()
         {
@@ -555,7 +563,7 @@ namespace VehicleDynamics
                 Gizmos.DrawLine(rightStrutChassisMount.position, rightStrutChassisMount.position + springDir * 2f);
             }
         }
-        void OnDrawGizmosSelected()
+        private void OnDrawGizmosSelected()
         {
             if (!drawGizmos) return;
             // Draw wheel hubs
@@ -572,14 +580,9 @@ namespace VehicleDynamics
             }
         }
         // Getters
-        public float GetTrackWidth()
-        {
-            return trackWidth;
-        }
-        public float GetDistanceToCOM()
-        {
-            return distToCOM;
-        }
+        public float GetTrackWidth() => trackWidth;
+
+        public float GetDistanceToCOM() => distToCOM;
         public float GetTireAlignmentTorque()
         {
             float torqueLeft = leftWheelHub.GetWheel().GetAlignmentTorque();
@@ -593,9 +596,210 @@ namespace VehicleDynamics
             return torqueLeft + torqueRight;
         }
 
-        public (Strut, Strut) GetStruts()
+        public (Strut, Strut) GetStruts() => (leftStrut, rightStrut);
+
+        private void LateUpdate()
         {
-            return (leftStrut, rightStrut);
+            if (!Application.isPlaying || !drawRuntimeDebug) return;
+            RebuildRuntimeDebugLines();
+        }
+
+        private void OnRenderObject()
+        {
+            if (!ShouldRenderRuntimeDebug()) return;
+
+            if (!Application.isPlaying)
+            {
+                RebuildRuntimeDebugLines();
+            }
+
+            if (runtimeDebugLines.Count == 0) return;
+
+            EnsureRuntimeLineMaterial();
+            runtimeDebugLineMaterial.SetPass(0);
+
+            GL.PushMatrix();
+            GL.Begin(GL.LINES);
+            for (int i = 0; i < runtimeDebugLines.Count; i++)
+            {
+                RuntimeDebugLine line = runtimeDebugLines[i];
+                GL.Color(line.color);
+                GL.Vertex(line.start);
+                GL.Vertex(line.end);
+            }
+            GL.End();
+            GL.PopMatrix();
+        }
+
+        private bool ShouldRenderRuntimeDebug()
+        {
+            if (!drawRuntimeDebug) return false;
+            return Application.isPlaying;
+        }
+
+        private void EnsureRuntimeLineMaterial()
+        {
+            if (runtimeDebugLineMaterial != null) return;
+
+            Shader shader = Shader.Find("Hidden/Internal-Colored");
+            if (shader == null) return;
+
+            runtimeDebugLineMaterial = new Material(shader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            runtimeDebugLineMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            runtimeDebugLineMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            runtimeDebugLineMaterial.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
+            runtimeDebugLineMaterial.SetInt("_ZWrite", 0);
+        }
+
+        private void RebuildRuntimeDebugLines()
+        {
+            runtimeDebugLines.Clear();
+            if (!drawRuntimeDebug) return;
+
+            float anchorSize = 0.025f;
+
+            DrawWishboneRuntime(
+                leftLowerWishboneHinge,
+                leftLowerWishboneBall,
+                leftLowerWishboneChassisMount,
+                leftLowerWishboneHubMount,
+                Color.green,
+                anchorSize);
+
+            if (suspensionType == SuspensionType.DoubleWishbone)
+            {
+                DrawWishboneRuntime(
+                    leftUpperWishboneHinge,
+                    leftUpperWishboneBall,
+                    leftUpperWishboneChassisMount,
+                    leftUpperWishboneHubMount,
+                    Color.cyan,
+                    anchorSize);
+            }
+
+            DrawWishboneRuntime(
+                rightLowerWishboneHinge,
+                rightLowerWishboneBall,
+                rightLowerWishboneChassisMount,
+                rightLowerWishboneHubMount,
+                Color.green,
+                anchorSize);
+
+            if (suspensionType == SuspensionType.DoubleWishbone)
+            {
+                DrawWishboneRuntime(
+                    rightUpperWishboneHinge,
+                    rightUpperWishboneBall,
+                    rightUpperWishboneChassisMount,
+                    rightUpperWishboneHubMount,
+                    Color.cyan,
+                    anchorSize);
+            }
+
+            DrawStrutRuntime(leftStrut, leftStrutChassisMount, leftStrutHubMount, springLength, anchorSize);
+            DrawStrutRuntime(rightStrut, rightStrutChassisMount, rightStrutHubMount, springLength, anchorSize);
+
+            if (drawSteeringAxis)
+            {
+                DrawSteeringAxisRuntime(leftStrutChassisMount, leftStrutHubMount);
+                DrawSteeringAxisRuntime(rightStrutChassisMount, rightStrutHubMount);
+            }
+        }
+
+        private void DrawWishboneRuntime(
+            ConfigurableJoint hinge,
+            ConfigurableJoint ball,
+            Transform chassisMount,
+            Transform hubMount,
+            Color color,
+            float markerSize)
+        {
+            if (hinge != null && ball != null)
+            {
+                Vector3 hingePoint = hinge.transform.TransformPoint(hinge.anchor);
+                Vector3 ballPoint = ball.transform.TransformPoint(ball.anchor);
+                AddRuntimeLine(hingePoint, ballPoint, color);
+                RuntimeDebugDraw.DrawCross(hingePoint, markerSize, color, AddRuntimeLine);
+                RuntimeDebugDraw.DrawCross(ballPoint, markerSize, color, AddRuntimeLine);
+                return;
+            }
+
+            if (chassisMount != null && hubMount != null)
+            {
+                AddRuntimeLine(chassisMount.position, hubMount.position, color);
+                RuntimeDebugDraw.DrawCross(chassisMount.position, markerSize, color, AddRuntimeLine);
+                RuntimeDebugDraw.DrawCross(hubMount.position, markerSize, color, AddRuntimeLine);
+            }
+        }
+
+        private void DrawStrutRuntime(Strut strut, Transform chassisMount, Transform hubMount, float currentSpringLength, float markerSize)
+        {
+            if (strut != null)
+            {
+                Vector3 strutChassisAnchor = strut.GetStrutChassisAnchor();
+                Vector3 strutHubAnchor = strut.GetStrutHubAnchor();
+                Vector3 springChassisAnchor = strut.GetSpringChassisAnchor();
+                Vector3 springHubAnchor = strut.GetSpringHubAnchor();
+
+                AddRuntimeLine(strutChassisAnchor, springChassisAnchor, Color.blue);
+                RuntimeDebugDraw.DrawCross(strutChassisAnchor, markerSize, Color.blue, AddRuntimeLine);
+
+                float compressionNorm = Mathf.InverseLerp(-currentSpringLength, 0f, strut.GetSpringCompression());
+                Color springColor = Color.Lerp(Color.red, Color.green, compressionNorm);
+                AddRuntimeLine(springChassisAnchor, springHubAnchor, springColor);
+
+                if (chassisMount != null)
+                {
+                    RuntimeDebugDraw.DrawCoilSpring(
+                        springChassisAnchor,
+                        springHubAnchor,
+                        chassisMount.right,
+                        chassisMount.forward,
+                        AddRuntimeLine,
+                        springColor);
+                }
+
+                AddRuntimeLine(springHubAnchor, strutHubAnchor, Color.gray);
+                RuntimeDebugDraw.DrawCross(strutHubAnchor, markerSize, Color.gray, AddRuntimeLine);
+                return;
+            }
+
+            if (chassisMount != null && hubMount != null)
+            {
+                Vector3 strutDir = (hubMount.position - chassisMount.position).normalized;
+                Vector3 springChassisAnchor = chassisMount.position + strutDir * bumpStopLength;
+                Vector3 springHubAnchor = springChassisAnchor + strutDir * currentSpringLength;
+
+                AddRuntimeLine(chassisMount.position, springChassisAnchor, Color.blue);
+                RuntimeDebugDraw.DrawCross(chassisMount.position, markerSize, Color.blue, AddRuntimeLine);
+
+                AddRuntimeLine(springChassisAnchor, springHubAnchor, Color.yellow);
+                RuntimeDebugDraw.DrawCoilSpring(
+                    springChassisAnchor,
+                    springHubAnchor,
+                    chassisMount.right,
+                    chassisMount.forward,
+                    AddRuntimeLine,
+                    Color.yellow);
+
+                AddRuntimeLine(springHubAnchor, hubMount.position, Color.gray);
+                RuntimeDebugDraw.DrawCross(hubMount.position, markerSize, Color.gray, AddRuntimeLine);
+            }
+        }
+
+        private void DrawSteeringAxisRuntime(Transform chassisMount, Transform hubMount)
+        {
+            if (chassisMount == null || hubMount == null) return;
+            Vector3 springDir = (hubMount.position - chassisMount.position).normalized;
+            AddRuntimeLine(chassisMount.position, chassisMount.position + springDir * 2f, Color.yellow);
+        }
+
+        private void AddRuntimeLine(Vector3 start, Vector3 end, Color color)
+        {
+            runtimeDebugLines.Add(new RuntimeDebugLine(start, end, color));
         }
     }
 }
