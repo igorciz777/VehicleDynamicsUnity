@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -43,8 +40,7 @@ namespace VehicleDynamics
 
         [Header("Wheel Center & Inertia")]
         public Vector3 wheelCenter = Vector3.zero;
-        private float wheelInertia = 0.0f;
-        
+
         [Header("Tire Squeal Audio")]
         public AudioClip tireSquealClip;
         [HideInInspector] public AudioSource slipRatioSquealSource, slipAngleSquealSource;
@@ -80,8 +76,6 @@ namespace VehicleDynamics
             wheel.Init(this);
 
             wheelCenter = transform.position + transform.right * (rightSided ? pS.hubSpacing : -pS.hubSpacing);
-            wheelInertia = 0.5f * wheelMass * wheelUnloadedRadius * wheelUnloadedRadius;
-
             CapsuleCollider col = gameObject.AddComponent<CapsuleCollider>();
             col.radius = 0.1f;
             col.height = 0.1f;
@@ -167,7 +161,7 @@ namespace VehicleDynamics
         {
             wheel.ApplyBrakeTorque(brakeTorque);
         }
-        public void ApplyBrakePressure(float brakePressure, bool handbrake=false)
+        public void ApplyBrakePressure(float brakePressure, bool handbrake = false)
         {
             bool ABS = pS.vehicleModel.hasABS;
             float vehicleSpeed = pS.vehicleModel.vehicleRigidbody.linearVelocity.magnitude;
@@ -175,18 +169,25 @@ namespace VehicleDynamics
             {
                 float wheelSlip = wheel.slipRatio;
                 float slipOpt = pS.vehicleModel.absSlipOpt;
-                float slipTol = pS.vehicleModel.absSlipTol;
+                float slipTol = Mathf.Abs(pS.vehicleModel.absSlipTol);
 
-                if (Mathf.Abs(wheelSlip) - slipOpt > slipTol && brakePressure > 0f)
+                if (slipOpt > 0f)
+                    slipOpt = -slipOpt;
+
+                float lockupThreshold = slipOpt - slipTol;
+                if (wheelSlip < lockupThreshold && brakePressure > 0f)
                 {
-                    brakePressure = 0f;
+                    float excessSlip = lockupThreshold - wheelSlip;
+                    float reduction = Mathf.Clamp01(excessSlip * 8f);
+                    brakePressure *= 1f - reduction;
                 }
             }
             float brakeTorque = pS.brakePadCount * pS.brakeFrictionCoefficient * brakePressure * (pS.brakePistonArea * 0.1f) * pS.brakeRotorRadius;
             wheel.ApplyBrakeTorque(brakeTorque);
         }
 
-        private void OnDrawGizmosSelected() {
+        private void OnDrawGizmosSelected()
+        {
             // Draw physical wheel radius and width
             if (visualWheel != null)
             {
@@ -198,15 +199,9 @@ namespace VehicleDynamics
         }
 
         // Getters
-        public Wheel GetWheel()
-        {
-            return wheel;
-        }
+        public Wheel GetWheel() => wheel;
 
-        public Suspension GetSuspension()
-        {
-            return pS;
-        }
+        public Suspension GetSuspension() => pS;
 
         // Setters
         public void SetTireParameters(float newTireMass, float newTirePressure, float newTireDampingRatio, float newTireNominalLoad)

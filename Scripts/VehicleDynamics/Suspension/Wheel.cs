@@ -1,4 +1,3 @@
-using UnityEditor;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -203,8 +202,22 @@ namespace VehicleDynamics
             float dampingForce = -penVel * tireDampingStiffness;
 
             float verticalForce = stiffnessForce + dampingForce;
-            verticalForce = Mathf.Clamp(verticalForce, -maxForce, maxForce);
+            verticalForce = Mathf.Clamp(verticalForce, 0f, maxForce);
             normalLoad = verticalForce;
+
+            if (normalLoad <= 1f)
+            {
+                normalLoad = 0f;
+                slipAngle = 0f;
+                slipRatio = 0f;
+                wheelEffectiveRadius = wheelUnloadedRadius;
+                wheelLoadedRadius = wheelUnloadedRadius;
+                alignmentTorque = 0f;
+                tireTorque = 0f;
+                rollingResistanceTorque = 0f;
+                tireContactCamberAngle = 0f;
+                return;
+            }
 
             // Compute loaded/effective radius
             float loadedRadius = wheelUnloadedRadius * (1 - currPen / wheelUnloadedRadius);
@@ -250,8 +263,13 @@ namespace VehicleDynamics
                 compositeFriction,
                 degressiveFriction
             );
+
+            float forceDampingFactor = 50f;
+
             // Get tire forces
-            tireForces = tireModel.GetForcesAndTorque(ref tireInput);
+            Vector4 rawTireForces = tireModel.GetForcesAndTorque(ref tireInput);
+            tireForces = Vector4.Lerp(tireForces, rawTireForces, 1f - Mathf.Exp(-forceDampingFactor * dt));
+
             // roadForce in world space projected on plane of contact normal
             Vector3 roadForce =
                 tireForces.x * Vector3.ProjectOnPlane(transform.forward, contactNormal).normalized +
@@ -355,25 +373,29 @@ namespace VehicleDynamics
         private float CalculateSlipAngle(float dt)
         {
             float slipEPS = 0.01f;
-            float Vx = Mathf.Max(Mathf.Abs(wheelLongitudalVelocity), slipEPS);
-            float slipAngle = Mathf.Atan2(wheelLateralVelocity, Vx);
 
-            if (tireFrictionModel == TireFrictionModel.MF_Simplified)
-                slipAngle = -slipAngle;
+            float Vx = wheelLongitudalVelocity;
+            float Vy = wheelLateralVelocity;
 
-            // Relaxation length model (slip angle lag)
-            float alpha_c = Mathf.Atan(slipAngle);
-            float tau = hub.tireRelaxationLength / Vx;
+            float absVx = Mathf.Max(Mathf.Abs(Vx), slipEPS);
 
-            // Discrete integration (first-order lag)
+            float alpha_c = Mathf.Atan2(-Vy, absVx);
+
+            // Relaxation length lag (first-order lag)
+            float tau = hub.tireRelaxationLength / absVx;
             float alpha_l = lastSlipAngleLagged + dt / tau * (alpha_c - lastSlipAngleLagged);
+
             lastSlipAngleLagged = alpha_l;
 
             // Lerp with speed to reduce oscillations at low speed
             float speedLerp = Mathf.InverseLerp(0f, 8.3f, vehicleBody.linearVelocity.magnitude);
             alpha_l = Mathf.Lerp(alpha_c, alpha_l, speedLerp);
 
-            return alpha_l;
+            // For MF_Simplified, invert sign for compatibility if needed
+            if (tireFrictionModel == TireFrictionModel.MF_Simplified)
+                alpha_l = -alpha_l;
+
+            return -alpha_l;
         }
         public void ApplyDriveTorque(float torque)
         {
@@ -399,7 +421,7 @@ namespace VehicleDynamics
                 squealSource.Stop();
         }
 
-        void UpdateTireSqueal()
+        private void UpdateTireSqueal()
         {
             UpdateTireSqueal(hub.slipRatioSquealSource, slipRatio, hub.slipRatioThreshold, 1f, wheelAngularVelocity, isGrounded);
             UpdateTireSqueal(hub.slipAngleSquealSource, slipAngle * Mathf.Rad2Deg, hub.slipAngleThreshold, 15f, vehicleBody.linearVelocity.magnitude, isGrounded);
@@ -422,12 +444,12 @@ namespace VehicleDynamics
             Debug.DrawRay(hitPointLocal, forceScaleLat * tireForces.w * transform.up, Color.blue);
         }
 
-        void OnDrawGizmos()
+        private void OnDrawGizmos()
         {
             Gizmos.color = Color.blue;
             if (isGrounded) Gizmos.DrawSphere(hitPoint, 0.02f);
         }
-        void OnDrawGizmosSelected()
+        private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
             // Draw SphereCasts
@@ -449,17 +471,10 @@ namespace VehicleDynamics
                 Gizmos.DrawSphere(ray.origin + ray.direction * rayLength, rayRadius);
             }
         }
-        public Vector3 GetContactPoint()
-        {
-            return hitPoint;
-        }
-        public float GetAlignmentTorque()
-        {
-            return alignmentTorque;
-        }
-        public Vector2 GetTireForces()
-        {
-            return new Vector2(tireForces.x, tireForces.z);
-        }
+        public Vector3 GetContactPoint() => hitPoint;
+
+        public float GetAlignmentTorque() => alignmentTorque;
+
+        public Vector2 GetTireForces() => new(tireForces.x, tireForces.z);
     }
 }
