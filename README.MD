@@ -24,3 +24,7 @@ The repository implements a modular vehicle model with explicit separation of sp
 The structure of the model follows standard vehicle-dynamics concepts used in multibody simulation and tire modeling literature. In particular, the repository draws on the separation of geometry and force elements typical of multibody systems, semi-empirical tire force formulations of the Pacejka family, and explicit spring-damper representations used in suspension analysis.
 
 ## Screenshots
+![Screenshot 1](https://i.imgur.com/3f7A1DM.jpeg)
+![Screenshot 2](https://i.imgur.com/vwO7NTM.jpeg)
+![Screenshot 3](https://i.imgur.com/0rSlSEw.jpeg)
+![Screenshot 4](https://i.imgur.com/qLeQQHA.jpeg)
