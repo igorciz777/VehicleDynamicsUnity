@@ -97,3 +97,7 @@ DirectIn.*
 # Debug track
 /Models/DebugTrack
 /Models/DebugTrack.meta
+
+# Unity meta garbage
+/LICENSE.meta
+/README.md.meta
