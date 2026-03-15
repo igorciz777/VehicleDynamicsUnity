@@ -93,3 +93,7 @@ DirectIn.*
 
 # TMP files
 /TextMesh Pro
+
+# Debug track
+/Models/DebugTrack
+/Models/DebugTrack.meta
