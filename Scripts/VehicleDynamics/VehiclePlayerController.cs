@@ -3,12 +3,17 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
+#if !UNITY_WEBGL
 using DirectInputManager;
+#endif
 
 namespace VehicleDynamics
 {
     public class VehiclePlayerController : MonoBehaviour
     {
+        [Header("Input Source")]
+        public bool useGlobalInputScheme = true;
+
         public VehicleModel vehicleModel;
         public float steeringAxis = 0f;
         public bool invertSteering = false;
@@ -22,6 +27,7 @@ namespace VehicleDynamics
         public bool invertHandbrake = false;
         public bool shiftUpButton = false;
         public bool shiftDownButton = false;
+        public bool starterButtonHeld = false;
         public bool mouseInput = false;
 
         public InputAction steeringAction;
@@ -31,7 +37,13 @@ namespace VehicleDynamics
         public InputAction handbrakeAction;
         public InputAction shiftUpAction;
         public InputAction shiftDownAction;
+        public InputAction starterAction;
+
+        private VehicleInputManager inputManager;
+
+        #if !UNITY_WEBGL
         private DirectInputDevice ffbDevice;
+        #endif
         public bool enableFFB = true;
 
         [Header("FFB Settings")]
@@ -51,40 +63,96 @@ namespace VehicleDynamics
         public float inertiaCoefficient = 0.05f;
 
         private float lastSteeringAxis = 0f;
+        private float nextFfbProbeTime = 0f;
+
+        private void BindInputActions()
+        {
+            if (!useGlobalInputScheme)
+            {
+                return;
+            }
+
+            inputManager = VehicleInputManager.Instance;
+            steeringAction = inputManager.GetAction(VehicleInputAction.Steering);
+            throttleAction = inputManager.GetAction(VehicleInputAction.Throttle);
+            brakeAction = inputManager.GetAction(VehicleInputAction.Brake);
+            clutchAction = inputManager.GetAction(VehicleInputAction.Clutch);
+            handbrakeAction = inputManager.GetAction(VehicleInputAction.Handbrake);
+            shiftUpAction = inputManager.GetAction(VehicleInputAction.ShiftUp);
+            shiftDownAction = inputManager.GetAction(VehicleInputAction.ShiftDown);
+            starterAction = inputManager.GetAction(VehicleInputAction.Starter);
+        }
+
+        private static void SetActionState(InputAction action, bool enabled)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            if (enabled)
+            {
+                action.Enable();
+            }
+            else
+            {
+                action.Disable();
+            }
+        }
 
         private void OnEnable()
         {
-            steeringAction.Enable();
-            throttleAction.Enable();
-            brakeAction.Enable();
-            clutchAction.Enable();
-            handbrakeAction.Enable();
-            shiftUpAction.Enable();
-            shiftDownAction.Enable();
+            BindInputActions();
+
+            // Global input manager owns action lifetime; local actions are enabled here for fallback mode.
+            if (!useGlobalInputScheme)
+            {
+                SetActionState(steeringAction, true);
+                SetActionState(throttleAction, true);
+                SetActionState(brakeAction, true);
+                SetActionState(clutchAction, true);
+                SetActionState(handbrakeAction, true);
+                SetActionState(shiftUpAction, true);
+                SetActionState(shiftDownAction, true);
+                SetActionState(starterAction, true);
+            }
         }
 
         private void OnDisable()
         {
-            steeringAction.Disable();
-            throttleAction.Disable();
-            brakeAction.Disable();
-            clutchAction.Disable();
-            handbrakeAction.Disable();
-            shiftUpAction.Disable();
-            shiftDownAction.Disable();
+            if (!useGlobalInputScheme)
+            {
+                SetActionState(steeringAction, false);
+                SetActionState(throttleAction, false);
+                SetActionState(brakeAction, false);
+                SetActionState(clutchAction, false);
+                SetActionState(handbrakeAction, false);
+                SetActionState(shiftUpAction, false);
+                SetActionState(shiftDownAction, false);
+                SetActionState(starterAction, false);
+            }
         }
 
-        void Start()
+        private void Start()
         {
+            BindInputActions();
             if (enableFFB)
             {
                 InitializeFFBDevice();
             }
         }
 
-        void Update()
+        private void Update()
         {
+            if (useGlobalInputScheme && steeringAction == null)
+            {
+                BindInputActions();
+            }
 
+            if (steeringAction == null || throttleAction == null || brakeAction == null || clutchAction == null || handbrakeAction == null || shiftUpAction == null || shiftDownAction == null)
+            {
+                return;
+            }
 
             steeringAxis = steeringAction.ReadValue<float>();
             if (invertSteering) steeringAxis = 1f - steeringAxis;
@@ -98,6 +166,7 @@ namespace VehicleDynamics
             if (invertHandbrake) handbrakeAxis = 1f - handbrakeAxis;
             shiftUpButton = shiftUpAction.triggered;
             shiftDownButton = shiftDownAction.triggered;
+            starterButtonHeld = starterAction != null && starterAction.IsPressed();
 
             if (mouseInput)
             {
@@ -124,19 +193,34 @@ namespace VehicleDynamics
                 vehicleModel.brakeInput = brakeAxis;
                 vehicleModel.clutchInput = clutchAxis;
                 vehicleModel.handbrakeInput = handbrakeAxis;
+                vehicleModel.starterHeld = starterButtonHeld;
             }
         }
 
-        void FixedUpdate()
+        private void FixedUpdate()
         {
+            #if !UNITY_WEBGL
+            if (enableFFB && ffbDevice == null && Time.unscaledTime >= nextFfbProbeTime)
+            {
+                nextFfbProbeTime = Time.unscaledTime + 1f;
+                InitializeFFBDevice();
+            }
+
             if (enableFFB && ffbDevice != null)
             {
                 UpdateFFBEffects();
             }
+            #endif
         }
 
         private void InitializeFFBDevice()
         {
+            #if !UNITY_WEBGL
+            if (steeringAction == null)
+            {
+                return;
+            }
+
             ffbDevice = steeringAction.controls
                 .Select(control => control.device)
                 .OfType<DirectInputDevice>()
@@ -154,10 +238,12 @@ namespace VehicleDynamics
             {
                 Debug.LogWarning("No FFB-capable device found.");
             }
+            #endif
         }
 
         private void UpdateFFBEffects()
         {
+            #if !UNITY_WEBGL
             string serial = ffbDevice.description.serial;
 
             float alignTorque = vehicleModel.tireAlignTorque * tireAlignTorqueScale;
@@ -193,16 +279,19 @@ namespace VehicleDynamics
             {
                 DIManager.UpdateFrictionSimple(serial, 0);
             }
+            #endif
 
             lastSteeringAxis = steeringAxis;
         }
 
         private void OnDestroy()
         {
+            #if !UNITY_WEBGL
             if (ffbDevice != null)
             {
                 DIManager.StopAllFFBEffects(ffbDevice.description.serial);
             }
+            #endif
         }
     }
 }

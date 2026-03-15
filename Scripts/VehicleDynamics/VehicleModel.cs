@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -17,6 +15,7 @@ namespace VehicleDynamics
         [Range(0f, 1f)] public float brakeInput = 0f;
         [Range(0f, 1f)] public float clutchInput = 0f;
         [Range(0f, 1f)] public float handbrakeInput = 0f;
+        public bool starterHeld = false;
         public bool shiftUp = false;
         public bool shiftDown = false;
         [Header("FFB")]
@@ -45,7 +44,7 @@ namespace VehicleDynamics
         [Header("Simulation Settings")]
         private SimulationSettings simSettings;
 
-        void Start()
+        private void Start()
         {
             if (vehicleRigidbody == null)
             {
@@ -99,19 +98,24 @@ namespace VehicleDynamics
             }
         }
 
-        void FixedUpdate()
+        private void FixedUpdate()
         {
             float dt = Time.fixedDeltaTime;
 
             float steeringWheelInput = Mathf.Clamp(steeringInput * (userWheelMaxAngle / steeringWheelMaxAngle), -1f, 1f);
             tireAlignTorque = 0f;
             steeringArmTorque = 0f;
-            foreach (var suspension in carSuspension)
+            Suspension[] suspensions = carSuspension;
+            int suspensionCount = suspensions != null ? suspensions.Length : 0;
+
+            for (int i = 0; i < suspensionCount; i++)
             {
+                Suspension suspension = suspensions[i];
                 if (suspension != null)
                 {
                     // Set steering input
-                    if(suspension.steerable){
+                    if (suspension.steerable)
+                    {
                         suspension.steeringInput = steeringWheelInput;
                         tireAlignTorque += suspension.GetTireAlignmentTorque();
                         steeringArmTorque += suspension.GetSteeringArmTorque();
@@ -127,11 +131,13 @@ namespace VehicleDynamics
             {
                 drivetrain.throttleInput = throttleInput;
                 drivetrain.clutchInput = clutchInput;
+                drivetrain.starterHeld = starterHeld;
                 drivetrain.Step(dt);
             }
 
-            foreach (var suspension in carSuspension)
+            for (int i = 0; i < suspensionCount; i++)
             {
+                Suspension suspension = suspensions[i];
                 if (suspension != null)
                 {
                     suspension.PostDrivetrainStep(dt);
@@ -156,7 +162,7 @@ namespace VehicleDynamics
         }
 
 
-        void OnDrawGizmosSelected()
+        private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.red;
             Vector3 comWorld = transform.TransformPoint(centerOfMass);

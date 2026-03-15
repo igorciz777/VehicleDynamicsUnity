@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace VehicleDynamics
@@ -14,6 +12,7 @@ namespace VehicleDynamics
         [Header("Drivetrain Inputs")]
         [Range(0f, 1f)] public float throttleInput = 0f;
         [Range(0f, 1f)] public float clutchInput = 0f;
+        public bool starterHeld = false;
         [Header("References")]
         public Rigidbody vehicleBody;
         [Header("Differentials")]
@@ -95,16 +94,16 @@ namespace VehicleDynamics
                             break;
                     }
 
-                    if (Mathf.Abs(currentSlip) > slipOpt + slipTol && throttleInput > 0f)
+                    if (currentSlip > slipOpt + slipTol && throttleInput > 0f)
                     {
-                        engine.StartCoroutine(engine.ThrottleLimiterCoroutine(0.1f));
+                        engine.RequestThrottleLimit(0.1f);
                         // Debug.Log("TCS activated");
                     }
                 }
             }
 
             // Step engine
-            engine.Step(dt, throttleInput, clutch.clutchTorque);
+            engine.Step(dt, throttleInput, clutch.clutchTorque, starterHeld);
 
             // wheel -> differential -> driveshaft
             float driveshaftAngularVelocity = 0f;

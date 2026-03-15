@@ -16,6 +16,9 @@ namespace VehicleDynamics
         [Header("Engine Parameters")]
         public float rpmIdle = 800f;
         public float rpmMax = 9000f; // Physical limit
+        [Header("Starter Motor")]
+        public float starterTorque = 90f; // starter torque (Nm)
+        public float starterTargetRpmOffset = 50f; // extra margin above idle target while cranking
         public bool hasRevLimiter = false;
         public float rpmLimiter = 8000f;
         public float limiterDuration = 0.1f; // seconds
@@ -23,6 +26,8 @@ namespace VehicleDynamics
         public float frictionTorque = 5f; // constant friction torque (Nm)
         public float dynamicFriction = 0.001f; // scaling with RPM (Nm per RPM)
         private bool isThrottleLimiterActive = false; // coroutine flag
+        private Coroutine throttleLimiterCoroutine;
+        private float throttleLimiterReleaseTime = -1f;
         public AnimationCurve torqueCurve = new(
             new Keyframe(0, 0),
             new Keyframe(500, 50),
@@ -65,6 +70,7 @@ namespace VehicleDynamics
         public float engineAngularVelocity = 0f;
         public float engineAngularAcceleration = 0f;
         public float engineThrottle = 0f;
+        public bool IsThrottleLimiterActive => isThrottleLimiterActive;
         [Header("Engine Audio")]
         public AudioClip engineSoundClip;
         private AudioSource engineSound;
@@ -108,14 +114,14 @@ namespace VehicleDynamics
                 turboSound.Play();
             }
         }
-        public void Step(float dt, float throttleInput=0f, float loadTorque = 0f)
+        public void Step(float dt, float throttleInput=0f, float loadTorque = 0f, bool starterHeld = false)
         {
             // Throttle mapping
             float throttleMapped = throttleResponseCurve.Evaluate(throttleInput);
 
             // Rev limiter
-            if (hasRevLimiter && engineRpm > rpmLimiter && !isThrottleLimiterActive)
-                StartCoroutine(ThrottleLimiterCoroutine(limiterDuration));
+            if (hasRevLimiter && engineRpm > rpmLimiter)
+                RequestThrottleLimit(limiterDuration);
             if (isThrottleLimiterActive)
                 throttleMapped = 0f;
 
@@ -165,6 +171,17 @@ namespace VehicleDynamics
             // Net torque
             netTorque = grossTorque - frictionLosses - loadTorque;
 
+            if (starterHeld)
+            {
+                float starterTargetRpm = rpmIdle + starterTargetRpmOffset;
+                if (engineRpm < starterTargetRpm)
+                {
+                    float rpmDeficit = starterTargetRpm - engineRpm;
+                    float starterAssist = Mathf.Clamp01(rpmDeficit / Mathf.Max(1f, starterTargetRpm));
+                    netTorque += starterTorque * starterAssist;
+                }
+            }
+
             // Angular acceleration
             engineAngularAcceleration = netTorque / flywheelInertia;
             // Update angular velocity
@@ -209,11 +226,34 @@ namespace VehicleDynamics
                 result = 0f;
             return result;
         }
-        public IEnumerator ThrottleLimiterCoroutine(float duration)
+        public void RequestThrottleLimit(float duration)
+        {
+            if (duration <= 0f)
+                return;
+
+            throttleLimiterReleaseTime = Mathf.Max(throttleLimiterReleaseTime, Time.time + duration);
+            throttleLimiterCoroutine ??= StartCoroutine(ThrottleLimiterLoop());
+        }
+
+        private IEnumerator ThrottleLimiterLoop()
         {
             isThrottleLimiterActive = true;
-            yield return new WaitForSeconds(duration);
+            while (Time.time < throttleLimiterReleaseTime)
+            {
+                yield return null;
+            }
             isThrottleLimiterActive = false;
+            throttleLimiterCoroutine = null;
+            throttleLimiterReleaseTime = -1f;
+        }
+
+        public IEnumerator ThrottleLimiterCoroutine(float duration)
+        {
+            RequestThrottleLimit(duration);
+            while (isThrottleLimiterActive)
+            {
+                yield return null;
+            }
         }
     }
 }
