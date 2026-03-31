@@ -101,3 +101,7 @@ DirectIn.*
 # Unity meta garbage
 /LICENSE.meta
 /README.md.meta
+
+# Build profiles
+/Settings/Build Profiles
+/Settings/Build Profiles.meta
