@@ -1,9 +1,8 @@
-//#define USING_DIRECT_INPUT
 
-using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
-#if !UNITY_WEBGL
+
+#if UNITY_STANDALONE_WIN
 using DirectInputManager;
 #endif
 
@@ -41,9 +40,9 @@ namespace VehicleDynamics
 
         private VehicleInputManager inputManager;
 
-        #if !UNITY_WEBGL
+#if UNITY_STANDALONE_WIN
         private DirectInputDevice ffbDevice;
-        #endif
+#endif
         public bool enableFFB = true;
 
         [Header("FFB Settings")]
@@ -63,7 +62,7 @@ namespace VehicleDynamics
         public float inertiaCoefficient = 0.05f;
 
         private float lastSteeringAxis = 0f;
-        private float nextFfbProbeTime = 0f;
+        // private float nextFfbProbeTime = 0f;
 
         private void BindInputActions()
         {
@@ -199,7 +198,7 @@ namespace VehicleDynamics
 
         private void FixedUpdate()
         {
-            #if !UNITY_WEBGL
+#if UNITY_STANDALONE_WIN
             if (enableFFB && ffbDevice == null && Time.unscaledTime >= nextFfbProbeTime)
             {
                 nextFfbProbeTime = Time.unscaledTime + 1f;
@@ -210,12 +209,12 @@ namespace VehicleDynamics
             {
                 UpdateFFBEffects();
             }
-            #endif
+#endif
         }
 
         private void InitializeFFBDevice()
         {
-            #if !UNITY_WEBGL
+#if UNITY_STANDALONE_WIN
             if (steeringAction == null)
             {
                 return;
@@ -238,12 +237,12 @@ namespace VehicleDynamics
             {
                 Debug.LogWarning("No FFB-capable device found.");
             }
-            #endif
+#endif
         }
 
         private void UpdateFFBEffects()
         {
-            #if !UNITY_WEBGL
+#if UNITY_STANDALONE_WIN
             string serial = ffbDevice.description.serial;
 
             float alignTorque = vehicleModel.tireAlignTorque * tireAlignTorqueScale;
@@ -279,19 +278,19 @@ namespace VehicleDynamics
             {
                 DIManager.UpdateFrictionSimple(serial, 0);
             }
-            #endif
+#endif
 
             lastSteeringAxis = steeringAxis;
         }
 
         private void OnDestroy()
         {
-            #if !UNITY_WEBGL
+#if UNITY_STANDALONE_WIN
             if (ffbDevice != null)
             {
                 DIManager.StopAllFFBEffects(ffbDevice.description.serial);
             }
-            #endif
+#endif
         }
     }
 }

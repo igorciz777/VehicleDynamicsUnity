@@ -85,67 +85,6 @@ namespace VehicleDynamics
             return new Vector4(Fx, 0f, Fy, Mz);
         }
     }
-    public class MagicFormulaSimplified : Tire
-    {
-        // Simplified Pacejka's Magic Formula
-        private readonly MFSimpleTireObject td;
-        public MagicFormulaSimplified(MFSimpleTireObject tireData)
-        {
-            td = tireData;
-        }
-        public override float UpdateSharedParams()
-        {
-            return 0f;
-        }
-
-        public override float GetPureLongitudinal()
-        {
-            if (tr.Fz <= 0) return 0f;
-
-            float mu = tr.compMu.x;
-            float Fz = tr.Fz;
-
-            float Fx = mu * Fz * td.D * Mathf.Sin(td.C_Long * Mathf.Atan(td.B * tr.kap - td.E * (td.B * tr.kap - Mathf.Atan(td.B * tr.kap))));
-            return Fx;
-        }
-        public override float GetPureLateral()
-        {
-            if (tr.Fz <= 0) return 0f;
-
-            float mu = tr.compMu.y;
-            float Fz = tr.Fz;
-
-            float Fy = mu * Fz * td.D * Mathf.Sin(td.C_Lat * Mathf.Atan(td.B * tr.alph - td.E * (td.B * tr.alph - Mathf.Atan(td.B * tr.alph))));
-            return Fy;
-        }
-        public override float GetPureAligningTorque()
-        {
-            // No aligning torque in simplified model
-            return 0f;
-        }
-        public override float GetCombinedLongitudinal()
-        {
-            return GetPureLongitudinal();
-        }
-        public override float GetCombinedLateral()
-        {
-            return GetPureLateral();
-        }
-        public override float GetCombinedAligningTorque()
-        {
-            return GetPureAligningTorque();
-        }
-        public override float GetRollingResistanceMoment()
-        {
-            float My = tr.r0 * -tr.Fz * tr.rollCoeff;
-            return My;
-        }
-        public override float GetOverturningMoment()
-        {
-            // No overturning moment in simplified model
-            return 0f;
-        }
-    }
     public class MagicFormula : Tire
     {
         // Pacejka's Magic Formula

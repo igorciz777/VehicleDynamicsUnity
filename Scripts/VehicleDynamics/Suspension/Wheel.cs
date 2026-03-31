@@ -6,7 +6,6 @@ namespace VehicleDynamics
     {
         public enum TireFrictionModel
         {
-            MF_Simplified,
             MF,
         }
 
@@ -75,9 +74,8 @@ namespace VehicleDynamics
             TireObject tireDataObject = hub.tireDataObject;
             tireModel = tireFrictionModel switch
             {
-                TireFrictionModel.MF_Simplified => new MagicFormulaSimplified((MFSimpleTireObject)tireDataObject),
                 TireFrictionModel.MF => new MagicFormula((MFTireObject)tireDataObject),
-                _ => new MagicFormulaSimplified((MFSimpleTireObject)tireDataObject),
+                _ => new MagicFormula((MFTireObject)tireDataObject),
             };
 
             // Initialize tire input
@@ -390,10 +388,6 @@ namespace VehicleDynamics
             // Lerp with speed to reduce oscillations at low speed
             float speedLerp = Mathf.InverseLerp(0f, 8.3f, vehicleBody.linearVelocity.magnitude);
             alpha_l = Mathf.Lerp(alpha_c, alpha_l, speedLerp);
-
-            // For MF_Simplified, invert sign for compatibility if needed
-            if (tireFrictionModel == TireFrictionModel.MF_Simplified)
-                alpha_l = -alpha_l;
 
             return -alpha_l;
         }

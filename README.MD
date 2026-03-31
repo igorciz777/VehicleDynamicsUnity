@@ -13,7 +13,7 @@ The repository implements a modular vehicle model with explicit separation of sp
 - Explicit suspension force calculation with spring, damper, fast bump/rebound, and bump-stop behavior.
 - Independent suspension architecture with double wishbone or MacPherson-style layouts, Ackermann steering, toe/camber adjustment, and anti-roll bar support.
 - Custom wheel-ground contact solved through multi-ray SphereCast sampling instead of WheelCollider.
-- Tire models based on Pacejka Magic Formula, including simplified and combined-slip variants with aligning torque and rolling resistance.
+- Tire models based on Pacejka Magic Formula combined-slip variant with aligning torque and rolling resistance.
 - Surface-dependent friction and rolling resistance for mesh and terrain roads.
 - Modular drivetrain with engine, clutch, transmission, differential logic, and support for FWD, RWD, and AWD layouts.
 - Input handling for keyboard, gamepad, joystick, and DirectInput devices, with support for Force Feedback
