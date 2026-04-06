@@ -4,6 +4,11 @@ VehicleDynamics is a Unity-based vehicle dynamics framework intended for simulat
 
 Playable Demo: https://igorciz777.github.io/VehicleDynamicsUnity/
 
+## Requirements
+- Unity 6.0 and newer, might work on older versions (untested)
+- Unity Input System and TextMesh Pro
+- Unity DirectInput https://github.com/MrTimcakes/Unity-DirectInput
+
 ## Overview
 
 The repository implements a modular vehicle model with explicit separation of sprung and unsprung masses. Instead of relying on Unity's default WheelCollider workflow, it uses physically structured hub, strut, wheel, and drivetrain components executed in the fixed-step simulation loop. The tire-ground contact itself is solved through multi-ray SphereCast sampling to determine contact points, normals, and slip conditions, which are then fed into a custom Pacejka Magic Formula-based tire model. The drivetrain supports engine torque curves, clutch slip, multi-gear transmission logic, and differential behavior for various drive layouts. Input handling is designed to accommodate multiple device types with optional Force Feedback support.
