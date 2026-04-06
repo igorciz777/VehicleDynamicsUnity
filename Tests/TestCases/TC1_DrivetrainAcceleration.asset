@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6e8f0a71ad4457f88f8e3c3c31fd9a1, type: 3}
+  m_Name: TC1_DrivetrainAcceleration
+  m_EditorClassIdentifier: 
+  testId: TC1
+  testKind: 0
+  description: Full-throttle straight-line acceleration test.
+  durationSeconds: 8
+  repeatCount: 1
+  overrideInitialPose: 0
+  initialPosition: {x: 0, y: 0, z: 0}
+  initialEulerAngles: {x: 0, y: 0, z: 0}
+  initialLinearVelocity: {x: 0, y: 0, z: 0}
+  initialAngularVelocity: {x: 0, y: 0, z: 0}
+  startingGear: 2
+  absEnabled: 1
+  tcsEnabled: 0
+  frontAntiRollEnabled: 1
+  rearAntiRollEnabled: 1
+  surfaceOverride:
+    apply: 0
+    longitudinalMu: 1
+    lateralMu: 1
+    rollingResistance: 0.015
+    decayingFriction: 0
+  inputSegments:
+  - startTime: 0
+    endTime: 1
+    steering: 0
+    throttle: 0.75
+    brake: 0
+    clutch: 0.6
+    handbrake: 0
+  - startTime: 1
+    endTime: 8
+    steering: 0
+    throttle: 1
+    brake: 0
+    clutch: 0
+    handbrake: 0
+  thresholds:
+  - metricName: maxSpeedKmh
+    hasMin: 1
+    minValue: 60
+    hasMax: 0
+    maxValue: 0
+    required: 1
+  - metricName: rmsEngineRpm
+    hasMin: 1
+    minValue: 1000
+    hasMax: 0
+    maxValue: 0
+    required: 1

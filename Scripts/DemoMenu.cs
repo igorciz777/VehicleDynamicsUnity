@@ -12,15 +12,18 @@ public class DemoMenu : MonoBehaviour
         }
 
         if (playButton != null) playButton.onClick.AddListener(OnPlay);
+        if (testCasesButton != null) testCasesButton.onClick.AddListener(onTestCases);
     }
     public Toggle[] vehicleToggles;
     public Toggle[] trackToggles;
     public string[] trackSceneNames;
     public Button playButton;
+    public Button testCasesButton;
 
     private void OnDestroy()
     {
         if (playButton != null) playButton.onClick.RemoveListener(OnPlay);
+        if (testCasesButton != null) testCasesButton.onClick.RemoveListener(onTestCases);
     }
 
     private int GetSelectedIndex(Toggle[] toggles)
@@ -56,5 +59,10 @@ public class DemoMenu : MonoBehaviour
 
         // Load the selected track scene
         SceneManager.LoadScene(trackSceneNames[trackIndex]);
+    }
+
+    private void onTestCases()
+    {
+        SceneManager.LoadScene("TestCases");
     }
 }

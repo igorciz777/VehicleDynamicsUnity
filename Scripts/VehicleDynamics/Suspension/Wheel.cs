@@ -470,5 +470,7 @@ namespace VehicleDynamics
         public float GetAlignmentTorque() => alignmentTorque;
 
         public Vector2 GetTireForces() => new(tireForces.x, tireForces.z);
+
+        public float getNormalLoad() => normalLoad;
     }
 }

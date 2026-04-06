@@ -10,9 +10,6 @@ namespace VehicleDynamics
 {
     public class VehiclePlayerController : MonoBehaviour
     {
-        [Header("Input Source")]
-        public bool useGlobalInputScheme = true;
-
         public VehicleModel vehicleModel;
         public float steeringAxis = 0f;
         public bool invertSteering = false;
@@ -38,8 +35,6 @@ namespace VehicleDynamics
         public InputAction shiftDownAction;
         public InputAction starterAction;
 
-        private VehicleInputManager inputManager;
-
 #if UNITY_STANDALONE_WIN
         private DirectInputDevice ffbDevice;
 #endif
@@ -62,25 +57,6 @@ namespace VehicleDynamics
         public float inertiaCoefficient = 0.05f;
 
         private float lastSteeringAxis = 0f;
-        // private float nextFfbProbeTime = 0f;
-
-        private void BindInputActions()
-        {
-            if (!useGlobalInputScheme)
-            {
-                return;
-            }
-
-            inputManager = VehicleInputManager.Instance;
-            steeringAction = inputManager.GetAction(VehicleInputAction.Steering);
-            throttleAction = inputManager.GetAction(VehicleInputAction.Throttle);
-            brakeAction = inputManager.GetAction(VehicleInputAction.Brake);
-            clutchAction = inputManager.GetAction(VehicleInputAction.Clutch);
-            handbrakeAction = inputManager.GetAction(VehicleInputAction.Handbrake);
-            shiftUpAction = inputManager.GetAction(VehicleInputAction.ShiftUp);
-            shiftDownAction = inputManager.GetAction(VehicleInputAction.ShiftDown);
-            starterAction = inputManager.GetAction(VehicleInputAction.Starter);
-        }
 
         private static void SetActionState(InputAction action, bool enabled)
         {
@@ -101,40 +77,30 @@ namespace VehicleDynamics
 
         private void OnEnable()
         {
-            BindInputActions();
-
-            // Global input manager owns action lifetime; local actions are enabled here for fallback mode.
-            if (!useGlobalInputScheme)
-            {
-                SetActionState(steeringAction, true);
-                SetActionState(throttleAction, true);
-                SetActionState(brakeAction, true);
-                SetActionState(clutchAction, true);
-                SetActionState(handbrakeAction, true);
-                SetActionState(shiftUpAction, true);
-                SetActionState(shiftDownAction, true);
-                SetActionState(starterAction, true);
-            }
+            SetActionState(steeringAction, true);
+            SetActionState(throttleAction, true);
+            SetActionState(brakeAction, true);
+            SetActionState(clutchAction, true);
+            SetActionState(handbrakeAction, true);
+            SetActionState(shiftUpAction, true);
+            SetActionState(shiftDownAction, true);
+            SetActionState(starterAction, true);
         }
 
         private void OnDisable()
         {
-            if (!useGlobalInputScheme)
-            {
-                SetActionState(steeringAction, false);
-                SetActionState(throttleAction, false);
-                SetActionState(brakeAction, false);
-                SetActionState(clutchAction, false);
-                SetActionState(handbrakeAction, false);
-                SetActionState(shiftUpAction, false);
-                SetActionState(shiftDownAction, false);
-                SetActionState(starterAction, false);
-            }
+            SetActionState(steeringAction, false);
+            SetActionState(throttleAction, false);
+            SetActionState(brakeAction, false);
+            SetActionState(clutchAction, false);
+            SetActionState(handbrakeAction, false);
+            SetActionState(shiftUpAction, false);
+            SetActionState(shiftDownAction, false);
+            SetActionState(starterAction, false);
         }
 
         private void Start()
         {
-            BindInputActions();
             if (enableFFB)
             {
                 InitializeFFBDevice();
@@ -143,11 +109,6 @@ namespace VehicleDynamics
 
         private void Update()
         {
-            if (useGlobalInputScheme && steeringAction == null)
-            {
-                BindInputActions();
-            }
-
             if (steeringAction == null || throttleAction == null || brakeAction == null || clutchAction == null || handbrakeAction == null || shiftUpAction == null || shiftDownAction == null)
             {
                 return;
