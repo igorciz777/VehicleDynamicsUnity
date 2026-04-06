@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Manages mouse cursor locking and toggling with input action support.
+/// </summary>
 public class MouseLock : MonoBehaviour
 {
     [SerializeField] private InputAction toggleMouseLockAction;

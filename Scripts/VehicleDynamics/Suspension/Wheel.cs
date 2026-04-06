@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Computes tire forces (longitudinal/lateral) from slip ratio/angle using friction model and applies them to vehicle.
+    /// </summary>
     public class Wheel : MonoBehaviour
     {
         public enum TireFrictionModel

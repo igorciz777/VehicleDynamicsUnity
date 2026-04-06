@@ -1,6 +1,9 @@
 using UnityEngine;
 using VehicleDynamics;
 
+/// <summary>
+/// Feeds vehicle telemetry data to UI plot views for real-time monitoring of performance metrics.
+/// </summary>
 public class VehiclePlotData : MonoBehaviour
 {
     [Header("Vehicle Components")]

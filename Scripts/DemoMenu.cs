@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Main menu controller handling vehicle and track selection with UI navigation.
+/// </summary>
 public class DemoMenu : MonoBehaviour
 {
     private void Start()

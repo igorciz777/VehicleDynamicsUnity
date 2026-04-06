@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Simulates spring and damper behavior in a MacPherson strut suspension geometry with bump stops.
+    /// </summary>
     public class Strut
     {
         private readonly Rigidbody chassisBody;

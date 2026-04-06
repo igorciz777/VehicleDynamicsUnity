@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Spawns a selected vehicle prefab at a designated spawn point based on selection manager configuration.
+/// </summary>
 public class CarSpawner : MonoBehaviour
 {
 	public GameObject[] carPrefabs;

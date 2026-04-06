@@ -3,6 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+/// <summary>
+/// Real-time data visualization component rendering dynamically updating 2D plots with grid and labels.
+/// </summary>
 public class PlotView : MonoBehaviour
 {
     [Header("Plot Settings")]

@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Utility functions for drawing debugging visualization shapes (circles, springs) in scene editor.
+/// </summary>
 public class CustomGizmos
 {
     public static void DrawCircle(Vector3 center, Vector3 normal, float radius, Color color, int segments = 36)

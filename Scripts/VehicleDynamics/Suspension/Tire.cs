@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Data container for tire input parameters including slip, load, friction, and alignment angles.
+    /// </summary>
     public class TireInput
     {
         public float kap; // slip ratio [-]

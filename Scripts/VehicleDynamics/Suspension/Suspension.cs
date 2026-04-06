@@ -4,7 +4,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
-
+    /// <summary>
+    /// Manages suspension geometry (wishbones, struts) and computes spring/damper forces for left and right wheels.
+    /// </summary>
     public class Suspension : MonoBehaviour
     {
         public enum SuspensionType

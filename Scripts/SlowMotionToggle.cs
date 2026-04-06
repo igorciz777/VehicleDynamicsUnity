@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Toggles slow-motion gameplay effect with configurable time scale.
+/// </summary>
 public class SlowMotionToggle : MonoBehaviour
 {
     public InputAction slowMotionAction;

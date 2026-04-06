@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Encapsulates wheel assembly (rim, tire, suspension mounting) with telemetry and audio feedback.
+    /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public class Hub : MonoBehaviour
     {

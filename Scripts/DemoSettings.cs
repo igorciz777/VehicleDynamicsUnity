@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Applies global demo configuration settings such as screen resolution.
+/// </summary>
 public class DemoSettings : MonoBehaviour
 {
     private void Start()

@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Simulates engine behavior including torque curves, idle control, starter motor, and rev limiting.
+    /// </summary>
     public class Engine : MonoBehaviour
     {
         public enum EngineState

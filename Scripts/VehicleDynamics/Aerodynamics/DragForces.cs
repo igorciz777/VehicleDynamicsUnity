@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Applies aerodynamic drag force proportional to velocity squared, with yaw-dependent scaling.
+    /// </summary>
     public class DragForces : MonoBehaviour
     {
         public float dragCoefficient = 0.3f; // Example value for a typical car

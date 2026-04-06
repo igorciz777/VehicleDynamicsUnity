@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Central vehicle controller aggregating subsystems (drivetrain, suspension) and managing unified input/output.
+    /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public class VehicleModel : MonoBehaviour
     {

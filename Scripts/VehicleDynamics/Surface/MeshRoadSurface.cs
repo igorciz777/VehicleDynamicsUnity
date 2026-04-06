@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Defines surface properties (friction, rolling resistance) for mesh-based road colliders.
+    /// </summary>
     public class MeshRoadSurface : MonoBehaviour
     {
         public string surfaceName;

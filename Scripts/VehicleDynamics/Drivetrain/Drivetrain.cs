@@ -3,6 +3,10 @@ using UnityEngine;
 namespace VehicleDynamics
 {
     public enum DrivetrainLayout { RWD, FWD, CenterDiffAWD, Fixed4WD }
+    
+    /// <summary>
+    /// Manages powertrain architecture (RWD/FWD/AWD) coordinating engine, transmission, differentials, and wheel torque distribution.
+    /// </summary>
     public class Drivetrain : MonoBehaviour
     {
         [Header("Drivetrain Layout")]

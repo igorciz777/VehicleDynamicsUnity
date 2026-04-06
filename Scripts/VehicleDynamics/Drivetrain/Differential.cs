@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Distributes torque between left and right wheels (open or locked differential behavior).
+    /// </summary>
     public class Differential : MonoBehaviour
     {
         public enum DifferentialType

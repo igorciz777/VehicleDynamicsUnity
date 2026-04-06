@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Simulates clutch engagement/disengagement with torque transmission between engine and transmission.
+    /// </summary>
     public class Clutch : MonoBehaviour
     {
         [Header("Clutch Parameters")]

@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Enumerates a runtime debug visualization line segment with position and color.
+    /// </summary>
     public struct RuntimeDebugLine
     {
         public Vector3 start;

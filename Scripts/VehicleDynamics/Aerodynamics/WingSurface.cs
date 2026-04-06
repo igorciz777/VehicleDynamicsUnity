@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Simulates aerodynamic lift and drag forces on a wing surface based on angle of attack and air density.
+    /// </summary>
     public class WingSurface : MonoBehaviour
     {
         public float length = 1.0f; // Length of the wing surface in meters

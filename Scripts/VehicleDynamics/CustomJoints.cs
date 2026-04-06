@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Factory for creating constrained revolute joints between rigidbodies with axis-aligned rotational freedom.
+    /// </summary>
     public class CustomJoints
     {
         public static ConfigurableJoint CreateRevoluteJoint(GameObject bodyA, GameObject bodyB, Vector3 anchor, Vector3 axis)

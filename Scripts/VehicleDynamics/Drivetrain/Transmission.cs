@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Manages gear ratios, current gear state, and torque/velocity multiplication between engine and wheels.
+    /// </summary>
     public class Transmission : MonoBehaviour
     {
         [Header("Transmission Parameters")]

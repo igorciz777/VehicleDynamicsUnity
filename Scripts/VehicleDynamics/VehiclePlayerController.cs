@@ -8,6 +8,9 @@ using DirectInputManager;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Translates player input (keyboard/gamepad/steering wheel) to vehicle control and manages force feedback.
+    /// </summary>
     public class VehiclePlayerController : MonoBehaviour
     {
         public VehicleModel vehicleModel;

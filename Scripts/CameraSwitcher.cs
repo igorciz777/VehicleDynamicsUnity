@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Switches between multiple cameras during gameplay using input actions.
+/// </summary>
 public class CameraSwitcher : MonoBehaviour
 {
     public InputAction cameraSwitchAction;

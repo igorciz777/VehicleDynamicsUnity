@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace VehicleDynamics
 {
+    /// <summary>
+    /// Assigns friction and audio properties to terrain layers for realistic surface interactions.
+    /// </summary>
     public class TerrainRoadSurface : MonoBehaviour
     {
         private Terrain terrain;

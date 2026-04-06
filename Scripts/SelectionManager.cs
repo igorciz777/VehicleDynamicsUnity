@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Singleton manager tracking user selections for vehicle and track in persistent scene.
+/// </summary>
 public class SelectionManager : MonoBehaviour
 {
 	public static SelectionManager Instance { get; private set; }

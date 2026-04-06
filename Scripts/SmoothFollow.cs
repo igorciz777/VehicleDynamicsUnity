@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// Provides smooth camera following with damping and optional rotation alignment to target.
+/// </summary>
 public class SmoothFollow : MonoBehaviour
 {
     public Transform target;
