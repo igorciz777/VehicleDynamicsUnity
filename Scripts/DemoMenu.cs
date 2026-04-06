@@ -16,6 +16,9 @@ public class DemoMenu : MonoBehaviour
 
         if (playButton != null) playButton.onClick.AddListener(OnPlay);
         if (testCasesButton != null) testCasesButton.onClick.AddListener(onTestCases);
+#if !UNITY_WEBGL
+        Screen.SetResolution(1600, 900, false);
+#endif
     }
     public Toggle[] vehicleToggles;
     public Toggle[] trackToggles;

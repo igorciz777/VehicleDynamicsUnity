@@ -1874,7 +1874,6 @@ GameObject:
   - component: {fileID: 1589493806}
   - component: {fileID: 1589493805}
   - component: {fileID: 1589493809}
-  - component: {fileID: 1589493810}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -1989,18 +1988,6 @@ MonoBehaviour:
   - DemoTrackScene
   playButton: {fileID: 1856880397}
   testCasesButton: {fileID: 1851848503}
---- !u!114 &1589493810
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1589493804}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 27ff1e417a2ea6241bd953a92b7ab804, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1648285580
 GameObject:
   m_ObjectHideFlags: 0

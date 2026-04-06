@@ -2667,17 +2667,17 @@ MonoBehaviour:
   leftWheelHubMount: {fileID: 7879795580754208863}
   rightWheelHubMount: {fileID: 3270551596403164444}
   springLength: 0.15
-  springStiffness: 39500
+  springStiffness: 42000
   bumpStopLength: 0.05
   bumpStopStiffness: 60000
   bumpStopBumpDamping: 2000
   bumpStopReboundDamping: 2000
-  bumpStiffness: 1000
-  reboundStiffness: 500
-  fastBumpStiffness: 1700
-  fastReboundStiffness: 900
-  fastBumpThreshold: 0.05
-  fastReboundThreshold: 0.1
+  bumpStiffness: 3200
+  reboundStiffness: 3800
+  fastBumpStiffness: 3000
+  fastReboundStiffness: 3500
+  fastBumpThreshold: 0.15
+  fastReboundThreshold: 0.2
   steerable: 0
   steeringInput: 0
   maxSteeringAngle: 38
@@ -2694,7 +2694,7 @@ MonoBehaviour:
   brakeRotorRadius: 0.15
   brakePistonArea: 20
   hasAntirollBar: 1
-  antirollBarStiffness: 110000
+  antirollBarStiffness: 140000
   antirollForce: 0
   drawGizmos: 0
   drawSteeringAxis: 0
@@ -3830,17 +3830,17 @@ MonoBehaviour:
   leftWheelHubMount: {fileID: 8569788731101244321}
   rightWheelHubMount: {fileID: 9104546612135921015}
   springLength: 0.2
-  springStiffness: 35500
+  springStiffness: 50000
   bumpStopLength: 0.1
   bumpStopStiffness: 60000
   bumpStopBumpDamping: 2000
   bumpStopReboundDamping: 2000
-  bumpStiffness: 2000
-  reboundStiffness: 3100
-  fastBumpStiffness: 1100
-  fastReboundStiffness: 1600
-  fastBumpThreshold: 0.06
-  fastReboundThreshold: 0.1
+  bumpStiffness: 3800
+  reboundStiffness: 3400
+  fastBumpStiffness: 3000
+  fastReboundStiffness: 2800
+  fastBumpThreshold: 0.25
+  fastReboundThreshold: 0.3
   steerable: 1
   steeringInput: 0
   maxSteeringAngle: 38
@@ -3848,8 +3848,8 @@ MonoBehaviour:
   setAckermannFromGeometry: 1
   oppositeSuspension: {fileID: 8881134355697690503}
   hubSpacing: 0.02
-  camberAdjustment: 4
-  toeAdjustment: -0.1
+  camberAdjustment: 2
+  toeAdjustment: 0.2
   brakePressure: 7000
   handbrakePressure: 0
   brakePadCount: 2
@@ -3857,7 +3857,7 @@ MonoBehaviour:
   brakeRotorRadius: 0.15
   brakePistonArea: 20
   hasAntirollBar: 1
-  antirollBarStiffness: 110000
+  antirollBarStiffness: 18000
   antirollForce: 0
   drawGizmos: 0
   drawSteeringAxis: 0

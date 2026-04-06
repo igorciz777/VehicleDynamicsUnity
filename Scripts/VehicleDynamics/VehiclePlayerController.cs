@@ -1,6 +1,8 @@
 
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Linq;
+
 
 #if UNITY_STANDALONE_WIN
 using DirectInputManager;
@@ -163,9 +165,8 @@ namespace VehicleDynamics
         private void FixedUpdate()
         {
 #if UNITY_STANDALONE_WIN
-            if (enableFFB && ffbDevice == null && Time.unscaledTime >= nextFfbProbeTime)
+            if (enableFFB && ffbDevice == null)
             {
-                nextFfbProbeTime = Time.unscaledTime + 1f;
                 InitializeFFBDevice();
             }
 

@@ -78,10 +78,17 @@ namespace VehicleDynamics
         public AudioClip engineSoundClip;
         private AudioSource engineSound;
         public float audioPitchMultiplier = 2f;
+        public float engineBaseVolume = 0.45f;
+        public float engineThrottleVolume = 0.65f;
+        public float engineMinDistance = 6f;
+        public float engineMaxDistance = 180f;
         [Header("Turbo Audio")]
         public AudioClip turboSoundClip;
         private AudioSource turboSound;
         public float turboSoundPitchMultiplier = 1.5f;
+        public float turboMaxVolume = 0.35f;
+        public float turboMinDistance = 5f;
+        public float turboMaxDistance = 140f;
         public void Init()
         {
             engineAngularVelocity = rpmIdle * RPM_TO_RADS;
@@ -102,6 +109,7 @@ namespace VehicleDynamics
                 engineSound.spatialBlend = 1.0f;
                 engineSound.volume = 0.0f;
                 engineSound.dopplerLevel = 0f;
+                Configure3DAudioSource(engineSound, engineMinDistance, engineMaxDistance);
                 engineSound.Play();
             }
             // Setup turbo audio
@@ -114,8 +122,24 @@ namespace VehicleDynamics
                 turboSound.spatialBlend = 1.0f;
                 turboSound.volume = 0.0f;
                 turboSound.dopplerLevel = 0f;
+                Configure3DAudioSource(turboSound, turboMinDistance, turboMaxDistance);
                 turboSound.Play();
             }
+        }
+
+        private static void Configure3DAudioSource(AudioSource source, float minDistance, float maxDistance)
+        {
+            source.rolloffMode = AudioRolloffMode.Custom;
+            source.minDistance = minDistance;
+            source.maxDistance = maxDistance;
+            source.spread = 40f;
+            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, new AnimationCurve(
+                new Keyframe(0f, 1f),
+                new Keyframe(0.1f, 0.95f),
+                new Keyframe(0.35f, 0.78f),
+                new Keyframe(0.65f, 0.42f),
+                new Keyframe(1f, 0.16f)
+            ));
         }
         public void Step(float dt, float throttleInput=0f, float loadTorque = 0f, bool starterHeld = false)
         {
@@ -205,15 +229,17 @@ namespace VehicleDynamics
         {
             if (engineSound == null) return;
             engineSound.pitch = 0.5f + engineRpm / rpmMax * audioPitchMultiplier;
-            engineSound.volume = 0.3f + engineThrottle / 100f * 0.7f;
-            if (engineRpm < 100f) engineSound.volume = (0.3f + engineThrottle / 100f * 0.7f) * (engineRpm / 100f);
+            float throttleFactor = engineThrottle / 100f;
+            float targetVolume = engineBaseVolume + throttleFactor * engineThrottleVolume;
+            engineSound.volume = Mathf.Clamp01(targetVolume);
+            if (engineRpm < 100f) engineSound.volume *= engineRpm / 100f;
         }
         private void UpdateTurboAudio(float boostLevel)
         {
             if (turboSound == null) return;
             turboSound.pitch = 0.5f + boostLevel / 100f * turboSoundPitchMultiplier;
-            turboSound.volume = boostLevel / 100f * 0.2f;
-            if (engineRpm < 100f) turboSound.volume = boostLevel / 100f * 0.2f * (engineRpm / 100f);
+            turboSound.volume = Mathf.Clamp01(boostLevel / 100f) * turboMaxVolume;
+            if (engineRpm < 100f) turboSound.volume *= engineRpm / 100f;
         }
         private float CalculateMagicTorque(float rpm, float throttlePercent)
         {

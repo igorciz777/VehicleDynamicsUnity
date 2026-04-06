@@ -3556,7 +3556,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1bcfc7fed4c7ae44bb491e834c3950cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useGlobalInputScheme: 0
   vehicleModel: {fileID: 3214950043877043814}
   steeringAxis: 0
   invertSteering: 0
@@ -3972,8 +3971,15 @@ MonoBehaviour:
   engineThrottle: 0
   engineSoundClip: {fileID: 8300000, guid: b7dd9c75db30dfc47ac1723714dc25a2, type: 3}
   audioPitchMultiplier: 2.2
+  engineBaseVolume: 0.45
+  engineThrottleVolume: 0.65
+  engineMinDistance: 6
+  engineMaxDistance: 180
   turboSoundClip: {fileID: 8300000, guid: 0530d2707aaaa67489f75db1f48da2cc, type: 3}
   turboSoundPitchMultiplier: 1.5
+  turboMaxVolume: 0.35
+  turboMinDistance: 5
+  turboMaxDistance: 140
 --- !u!114 &4628571680785461974
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4090,7 +4096,7 @@ MonoBehaviour:
   - {fileID: 1821990399831462043}
   - {fileID: 341170412877786735}
   - {fileID: 3251916986320647410}
-  - {fileID: 5457193768629395937}
+  - {fileID: 2562017473181412545}
 --- !u!114 &2635861504693517132
 MonoBehaviour:
   m_ObjectHideFlags: 0
